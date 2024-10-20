@@ -30,3 +30,20 @@
 *.exe
 *.out
 *.app
+
+# Large media files
+*.mp4
+*.tiff
+*.avi
+*.flv
+*.mov
+*.wmv
+
+# VS-Specific
+.vs/
+bin/
+symbols/
+Release/
+
+# Utils
+Bochs-2.6.8/
