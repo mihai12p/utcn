@@ -133,11 +133,13 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Interrupts.c" />
     <ClCompile Include="logging.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="screen.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Interrupts.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="screen.h" />

@@ -1,19 +1,19 @@
 
 %include "Utils.inc"
 
-IMPORTFROMC KernelMain
-EXPORT2C ASMEntryPoint, __cli, __sti, __magic, __enableSSE
+IMPORTFROMC KernelMain, ExceptionHandler
+EXPORT2C ASMEntryPoint, __cli, __sti, __magic, __enableSSE, gISR_stub_table
 
 segment .text
 
 [BITS 32]
 ASMEntryPoint:
     cli
-    mov  DWORD [0x000B8000],    'O1S1'
+    mov  DWORD [000B8000h],    'O1S1'
 %ifidn __OUTPUT_FORMAT__, win32
-    mov  DWORD [0x000B8004],    '3121'                  ; 32 bit build marker
+    mov  DWORD [000B8004h],    '3121'                   ; 32 bit build marker
 %else
-    mov  DWORD [0x000B8004],    '6141'                  ; 64 bit build marker
+    mov  DWORD [000B8004h],    '6141'                   ; 64 bit build marker
 %endif
 
     mov  esp,    TOP_OF_STACK                           ; just below the kernel
@@ -79,6 +79,111 @@ ASMEntryPoint:
     cli
     hlt
 
+.interrupts:
+    ISR_NOERRCODE 0
+    ISR_NOERRCODE 1
+    ISR_NOERRCODE 2
+    ISR_NOERRCODE 3
+    ISR_NOERRCODE 4
+    ISR_NOERRCODE 5
+    ISR_NOERRCODE 6
+    ISR_NOERRCODE 7
+    ISR_ERRCODE   8
+    ISR_NOERRCODE 9
+    ISR_ERRCODE   10
+    ISR_ERRCODE   11
+    ISR_ERRCODE   12
+    ISR_ERRCODE   13
+    ISR_ERRCODE   14
+    ISR_NOERRCODE 15
+    ISR_NOERRCODE 16
+    ISR_ERRCODE   17
+    ISR_NOERRCODE 18
+    ISR_NOERRCODE 19
+    ISR_NOERRCODE 20
+    ISR_NOERRCODE 21
+    ISR_NOERRCODE 22
+    ISR_NOERRCODE 23
+    ISR_NOERRCODE 24
+    ISR_NOERRCODE 25
+    ISR_NOERRCODE 26
+    ISR_NOERRCODE 27
+    ISR_NOERRCODE 28
+    ISR_NOERRCODE 29
+    ISR_ERRCODE   30
+    ISR_NOERRCODE 31
+__isr_common_stub:
+; Stack:
+;     [rsp + 30h]     SS
+;     [rsp + 28h]     RSP
+;     [rsp + 20h]     RFLAGS
+;     [rsp + 18h]     CS
+;     [rsp + 10h]     RIP
+;     [rsp + 08h]     Error code
+;     [rsp + 00h]     Interrupt index
+
+    mov  [CPU_CONTEXT + CPUContext.rax], rax
+    mov  [CPU_CONTEXT + CPUContext.rbx], rbx
+    mov  [CPU_CONTEXT + CPUContext.rcx], rcx
+    mov  [CPU_CONTEXT + CPUContext.rdx], rdx
+    mov  [CPU_CONTEXT + CPUContext.rsi], rsi
+    mov  [CPU_CONTEXT + CPUContext.rdi], rdi
+    mov  rcx, [rsp + 28h]
+    mov  [CPU_CONTEXT + CPUContext.rsp], rcx
+    mov  [CPU_CONTEXT + CPUContext.rbp], rbp
+    mov  [CPU_CONTEXT + CPUContext.r8], r8
+    mov  [CPU_CONTEXT + CPUContext.r9], r9
+    mov  [CPU_CONTEXT + CPUContext.r10], r10
+    mov  [CPU_CONTEXT + CPUContext.r11], r11
+    mov  [CPU_CONTEXT + CPUContext.r12], r12
+    mov  [CPU_CONTEXT + CPUContext.r13], r13
+    mov  [CPU_CONTEXT + CPUContext.r14], r14
+    mov  [CPU_CONTEXT + CPUContext.r15], r15
+    mov  rcx, [rsp + 10h]
+    mov  [CPU_CONTEXT + CPUContext.rip], rcx
+    mov  rcx, [rsp + 18h]
+    mov  [CPU_CONTEXT + CPUContext.cs], cx
+    mov  rcx, [rsp + 30h]
+    mov  [CPU_CONTEXT + CPUContext.ss], cx
+    mov  [CPU_CONTEXT + CPUContext.ds], ds
+    mov  [CPU_CONTEXT + CPUContext.es], es
+    mov  [CPU_CONTEXT + CPUContext.fs], fs
+    mov  [CPU_CONTEXT + CPUContext.gs], gs
+    mov  rcx, [rsp + 20h]
+    mov  [CPU_CONTEXT + CPUContext.rflags], ecx
+    mov  rcx, cr0
+    mov  [CPU_CONTEXT + CPUContext.cr0], rcx
+    mov  rcx, cr2
+    mov  [CPU_CONTEXT + CPUContext.cr2], rcx
+    mov  rcx, cr3
+    mov  [CPU_CONTEXT + CPUContext.cr3], rcx
+    mov  rcx, cr4
+    mov  [CPU_CONTEXT + CPUContext.cr4], rcx
+    mov  rcx, dr0
+    mov  [CPU_CONTEXT + CPUContext.dr0], rcx
+    mov  rcx, dr1
+    mov  [CPU_CONTEXT + CPUContext.dr1], rcx
+    mov  rcx, dr2
+    mov  [CPU_CONTEXT + CPUContext.dr2], rcx
+    mov  rcx, dr3
+    mov  [CPU_CONTEXT + CPUContext.dr3], rcx
+    mov  rcx, dr6
+    mov  [CPU_CONTEXT + CPUContext.dr6], rcx
+    mov  rcx, dr7
+    mov  [CPU_CONTEXT + CPUContext.dr7], rcx
+
+    sub  rsp, 10h
+
+    mov  rcx, CPU_CONTEXT
+    mov  rdx, [rsp + 10h]
+    mov  r8,  [rsp + 18h]
+    xor  r9,  r9
+
+    call ExceptionHandler
+    add  rsp, 20h
+
+    iretq
+
 [BITS 32]
 __cli:
     cli
@@ -104,10 +209,10 @@ segment .data
 ; total memory mapped by a page table equals to 2MB
 ;
 _page_table:
-    DEFINE_PT PT0, 0x0000000000000000       ; 000000 - 1FFFFF
-    DEFINE_PT PT1, 0x0000000000200000       ; 200000 - 3FFFFF
-    DEFINE_PT PT2, 0x0000000000000000       ; 000000 - 1FFFFF
-    DEFINE_PT PT3, 0x0000000000200000       ; 200000 - 3FFFFF
+    DEFINE_PT PT0, 0000000000000000h        ; 000000 - 1FFFFF
+    DEFINE_PT PT1, 0000000000200000h        ; 200000 - 3FFFFF
+    DEFINE_PT PT2, 0000000000000000h        ; 000000 - 1FFFFF
+    DEFINE_PT PT3, 0000000000200000h        ; 200000 - 3FFFFF
 
 ;
 ; each entry covers 2MB
@@ -153,11 +258,59 @@ _page_map_level_4:
 ; PML4
 ; |- PML4[0] -> PDPT0 (Identity Mapping)
 ; |   |- PDPT0[0] -> PD0
-; |       |- PD0[0] -> PT0 (PA 0x0000000000000000 - 0x00000000001FFFFF -> VA 0x0000000000000000 - 0x00000000001FFFFF)
-; |       |- PD0[1] -> PT1 (PA 0x0000000000200000 - 0x00000000003FFFFF -> VA 0x0000000000200000 - 0x00000000003FFFFF)
+; |       |- PD0[0] -> PT0 (PA 0000000000000000h - 00000000001FFFFFh -> VA 0000000000000000h - 00000000001FFFFFh)
+; |       |- PD0[1] -> PT1 (PA 0000000000200000h - 00000000003FFFFFh -> VA 0000000000200000h - 00000000003FFFFFh)
 ; |- PML4[1] -> Unused
 ; |- PML4[2] -> PDPT2 (Non-Identity Mapping)
 ; |   |- PDPT2[0] -> PD2
-; |       |- PD2[0] -> PT2 (PA 0x0000000000000000 - 0x00000000001FFFFF -> VA 0x0000010000000000 - 0x00000100001FFFFF)
-; |       |- PD2[1] -> PT3 (PA 0x0000000000200000 - 0x00000000003FFFFF -> VA 0x0000010000200000 - 0x00000100003FFFFF)
+; |       |- PD2[0] -> PT2 (PA 0000000000000000h - 00000000001FFFFFh -> VA 0000010000000000h - 00000100001FFFFFh)
+; |       |- PD2[1] -> PT3 (PA 0000000000200000h - 00000000003FFFFFh -> VA 0000010000200000h - 00000100003FFFFFh)
 ; |- PML4[3-511] -> Unused
+
+gISR_stub_table:
+%assign i 0
+%rep    32
+    dq isr_stub_%+i
+    %assign i i+1
+%endrep
+
+segment .bss
+
+align 16
+struc CPUContext
+    .rax    resq 1
+    .rbx    resq 1
+    .rcx    resq 1
+    .rdx    resq 1
+    .rsi    resq 1
+    .rdi    resq 1
+    .rsp    resq 1
+    .rbp    resq 1
+    .r8     resq 1
+    .r9     resq 1
+    .r10    resq 1
+    .r11    resq 1
+    .r12    resq 1
+    .r13    resq 1
+    .r14    resq 1
+    .r15    resq 1
+    .rip    resq 1
+    .cs     resw 1
+    .ss     resw 1
+    .ds     resw 1
+    .es     resw 1
+    .fs     resw 1
+    .gs     resw 1
+    .rflags resd 1
+    .cr0    resq 1
+    .cr2    resq 1
+    .cr3    resq 1
+    .cr4    resq 1
+    .dr0    resq 1
+    .dr1    resq 1
+    .dr2    resq 1
+    .dr3    resq 1
+    .dr6    resq 1
+    .dr7    resq 1
+endstruc
+CPU_CONTEXT resb CPUContext_size

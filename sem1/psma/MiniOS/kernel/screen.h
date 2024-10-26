@@ -7,9 +7,7 @@
 #define MAX_COLUMNS     80
 #define MAX_OFFSET      2000 //25 lines * 80 chars
 
-
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 typedef struct _SCREEN
 {
     char c;

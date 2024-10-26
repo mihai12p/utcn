@@ -78,3 +78,16 @@ TOP_OF_STACK                equ (0x200000)
     mov  CTRL_REG,  eax
     pop  eax
 %endmacro
+
+%macro ISR_NOERRCODE 1
+    isr_stub_%+%1:
+        push 0
+        push %1
+        jmp  __isr_common_stub
+%endmacro
+
+%macro ISR_ERRCODE 1
+    isr_stub_%+%1:
+        push %1
+        jmp  __isr_common_stub
+%endmacro

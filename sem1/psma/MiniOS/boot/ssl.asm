@@ -120,7 +120,6 @@ A20_on:
     cli
     hlt
 
-
 segment .data
 
 GDT:

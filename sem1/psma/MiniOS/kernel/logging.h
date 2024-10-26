@@ -3,9 +3,28 @@
 
 #include "main.h"
 
-void InitLogging();
+VOID
+InitLogging();
 
-void Log(char * Message);
+VOID
+LogWord(
+    WORD Value
+);
+
+VOID
+LogDword(
+    DWORD Value
+);
+
+VOID
+LogQword(
+    QWORD Value
+);
+
+VOID
+LogMessage(
+    const char* Message
+);
 
 
 #endif // _LOGGING_H_
