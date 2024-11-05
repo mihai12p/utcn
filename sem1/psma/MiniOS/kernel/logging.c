@@ -1,19 +1,20 @@
 #include "logging.h"
+#include "PIC.h"
 
 VOID
 InitLogging()
 {
     WORD divisor = 4;
 
-    __outbyte(0x3FB, 0x80);
-    __outbyte(0x3F8, (divisor >> 8) & 0x00FF);
-    __outbyte(0x3F8, divisor & 0x00FF);
+    __outbyte(0x3FB, 0x80); io_wait();
+    __outbyte(0x3F8, (divisor >> 8) & 0x00FF); io_wait();
+    __outbyte(0x3F8, divisor & 0x00FF); io_wait();
 
-    __outbyte(0x3FB, 0x03);
+    __outbyte(0x3FB, 0x03); io_wait();
 
-    __outbyte(0x3FA, 0xC7);
+    __outbyte(0x3FA, 0xC7); io_wait();
 
-    __outbyte(0x3FC, 0x03);
+    __outbyte(0x3FC, 0x03); io_wait();
 }
 
 int
@@ -40,7 +41,7 @@ LogHex(
     for (int i = 0; buffer[i]; ++i)
     {
         while (!IsLineReady()) {}
-        __outbyte(0x3F8, buffer[i]);
+        __outbyte(0x3F8, buffer[i]); io_wait();
     }
 }
 
@@ -76,6 +77,6 @@ LogMessage(
     for (int i = 0; Message[i]; ++i)
     {
         while (!IsLineReady()) {}
-        __outbyte(0x3F8, Message[i]);
+        __outbyte(0x3F8, Message[i]); io_wait();
     }
 }

@@ -16,12 +16,11 @@ typedef struct _SCREEN
 #pragma pack(pop)
 
 void HelloBoot();
-
-void SetColor(BYTE Color);
 void ClearScreen();
-void PutChar(char C, int Pos);
-void PutString(char* String, int Pos);
-void PutStringLine(char* String, int Line);
 
+VOID
+PutChar(
+    _In_ char C
+);
 
 #endif // _SCREEN_H_

@@ -83,7 +83,9 @@ typedef enum _EXCEPTION_ID
     EXCEPTION_VC       = 29,
     EXCEPTION_SX       = 30,
     EXCEPTION_RES9     = 31,
-    USER_DEFINED_START = 32,
+    INTERRUPT_TIMER    = 32,
+    INTERRUPT_KB       = 33,
+    USER_DEFINED_START = 34,
     USER_DEFINED_END   = 255
 } EXCEPTION_ID;
 
@@ -95,11 +97,11 @@ typedef struct _EXCEPTION_INFO
 #pragma pack(pop)
 
 VOID
-ExceptionHandler(
-    PCPU_CONTEXT Context,
-    QWORD        InterruptIdx,
-    QWORD        ErrorCode,
-    QWORD        Reserved
+InterruptHandler(
+    _In_ PCPU_CONTEXT Context,
+    _In_ QWORD        InterruptIdx,
+    _In_ QWORD        ErrorCode,
+    _In_ QWORD        Reserved
 );
 
 VOID

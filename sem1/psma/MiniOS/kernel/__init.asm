@@ -1,8 +1,8 @@
 
 %include "Utils.inc"
 
-IMPORTFROMC KernelMain, ExceptionHandler
-EXPORT2C ASMEntryPoint, __cli, __sti, __magic, __enableSSE, gISR_stub_table
+IMPORTFROMC KernelMain, InterruptHandler
+EXPORT2C ASMEntryPoint, __magic, gISR_stub_table
 
 segment .text
 
@@ -46,6 +46,11 @@ ASMEntryPoint:
     ;
     ENABLE_CR_FLAG CR0, CR0.PG
 
+    ;
+    ; enable SSE
+    ;
+    ENABLE_CR_FLAG CR4, CR4.OSFXSR
+
     jmp  8:.bits64           ; change the CS to 8 (index of FLAT_DESCRIPTOR_CODE64 entry)
 
 [BITS 64]
@@ -57,21 +62,11 @@ ASMEntryPoint:
     mov  ss,    ax
     mov  fs,    ax
 
-    ;
-    ; invalidate identity-mapping
-    ;
-    ; mov rax,  PML4
-    ; mov QWORD [rax],  0
-
-    ;
-    ; invalidate all entries in the TLB (Translation Lookaside Buffers)
-    ; where the processor may cache information about the translation of linear addresses
-    ;
-    mov rax,    cr3
-    mov cr3,    rax
+    call __invalidate_TLB
 
     mov  rax,   1
     shl  rax,   40
+    add  rsp,   rax
     add  rax,   KernelMain
     call rax
 
@@ -112,6 +107,8 @@ ASMEntryPoint:
     ISR_NOERRCODE 29
     ISR_ERRCODE   30
     ISR_NOERRCODE 31
+    ISR_NOERRCODE 32    ; Timer
+    ISR_NOERRCODE 33    ; Keyboard
 __isr_common_stub:
 ; Stack:
 ;     [rsp + 30h]     SS
@@ -122,83 +119,79 @@ __isr_common_stub:
 ;     [rsp + 08h]     Error code
 ;     [rsp + 00h]     Interrupt index
 
-    mov  [CPU_CONTEXT + CPUContext.rax], rax
-    mov  [CPU_CONTEXT + CPUContext.rbx], rbx
-    mov  [CPU_CONTEXT + CPUContext.rcx], rcx
-    mov  [CPU_CONTEXT + CPUContext.rdx], rdx
-    mov  [CPU_CONTEXT + CPUContext.rsi], rsi
-    mov  [CPU_CONTEXT + CPUContext.rdi], rdi
-    mov  rcx, [rsp + 28h]
-    mov  [CPU_CONTEXT + CPUContext.rsp], rcx
-    mov  [CPU_CONTEXT + CPUContext.rbp], rbp
-    mov  [CPU_CONTEXT + CPUContext.r8], r8
-    mov  [CPU_CONTEXT + CPUContext.r9], r9
-    mov  [CPU_CONTEXT + CPUContext.r10], r10
-    mov  [CPU_CONTEXT + CPUContext.r11], r11
-    mov  [CPU_CONTEXT + CPUContext.r12], r12
-    mov  [CPU_CONTEXT + CPUContext.r13], r13
-    mov  [CPU_CONTEXT + CPUContext.r14], r14
-    mov  [CPU_CONTEXT + CPUContext.r15], r15
-    mov  rcx, [rsp + 10h]
-    mov  [CPU_CONTEXT + CPUContext.rip], rcx
-    mov  rcx, [rsp + 18h]
-    mov  [CPU_CONTEXT + CPUContext.cs], cx
-    mov  rcx, [rsp + 30h]
-    mov  [CPU_CONTEXT + CPUContext.ss], cx
-    mov  [CPU_CONTEXT + CPUContext.ds], ds
-    mov  [CPU_CONTEXT + CPUContext.es], es
-    mov  [CPU_CONTEXT + CPUContext.fs], fs
-    mov  [CPU_CONTEXT + CPUContext.gs], gs
-    mov  rcx, [rsp + 20h]
-    mov  [CPU_CONTEXT + CPUContext.rflags], ecx
+    sub  rsp, CPUContext_size
+
+    mov  [rsp + CPUContext.rax], rax
+    mov  [rsp + CPUContext.rbx], rbx
+    mov  [rsp + CPUContext.rcx], rcx
+    mov  [rsp + CPUContext.rdx], rdx
+    mov  [rsp + CPUContext.rsi], rsi
+    mov  [rsp + CPUContext.rdi], rdi
+    mov  rcx, [rsp + CPUContext_size + 28h]
+    mov  [rsp + CPUContext.rsp], rcx
+    mov  [rsp + CPUContext.rbp], rbp
+    mov  [rsp + CPUContext.r8], r8
+    mov  [rsp + CPUContext.r9], r9
+    mov  [rsp + CPUContext.r10], r10
+    mov  [rsp + CPUContext.r11], r11
+    mov  [rsp + CPUContext.r12], r12
+    mov  [rsp + CPUContext.r13], r13
+    mov  [rsp + CPUContext.r14], r14
+    mov  [rsp + CPUContext.r15], r15
+    mov  rcx, [rsp + CPUContext_size + 10h]
+    mov  [rsp + CPUContext.rip], rcx
+    mov  rcx, [rsp + CPUContext_size + 18h]
+    mov  [rsp + CPUContext.cs], cx
+    mov  rcx, [rsp + CPUContext_size + 30h]
+    mov  [rsp + CPUContext.ss], cx
+    mov  [rsp + CPUContext.ds], ds
+    mov  [rsp + CPUContext.es], es
+    mov  [rsp + CPUContext.fs], fs
+    mov  [rsp + CPUContext.gs], gs
+    mov  rcx, [rsp + CPUContext_size + 20h]
+    mov  [rsp + CPUContext.rflags], ecx
     mov  rcx, cr0
-    mov  [CPU_CONTEXT + CPUContext.cr0], rcx
+    mov  [rsp + CPUContext.cr0], rcx
     mov  rcx, cr2
-    mov  [CPU_CONTEXT + CPUContext.cr2], rcx
+    mov  [rsp + CPUContext.cr2], rcx
     mov  rcx, cr3
-    mov  [CPU_CONTEXT + CPUContext.cr3], rcx
+    mov  [rsp + CPUContext.cr3], rcx
     mov  rcx, cr4
-    mov  [CPU_CONTEXT + CPUContext.cr4], rcx
+    mov  [rsp + CPUContext.cr4], rcx
     mov  rcx, dr0
-    mov  [CPU_CONTEXT + CPUContext.dr0], rcx
+    mov  [rsp + CPUContext.dr0], rcx
     mov  rcx, dr1
-    mov  [CPU_CONTEXT + CPUContext.dr1], rcx
+    mov  [rsp + CPUContext.dr1], rcx
     mov  rcx, dr2
-    mov  [CPU_CONTEXT + CPUContext.dr2], rcx
+    mov  [rsp + CPUContext.dr2], rcx
     mov  rcx, dr3
-    mov  [CPU_CONTEXT + CPUContext.dr3], rcx
+    mov  [rsp + CPUContext.dr3], rcx
     mov  rcx, dr6
-    mov  [CPU_CONTEXT + CPUContext.dr6], rcx
+    mov  [rsp + CPUContext.dr6], rcx
     mov  rcx, dr7
-    mov  [CPU_CONTEXT + CPUContext.dr7], rcx
+    mov  [rsp + CPUContext.dr7], rcx
 
-    sub  rsp, 10h
-
-    mov  rcx, CPU_CONTEXT
-    mov  rdx, [rsp + 10h]
-    mov  r8,  [rsp + 18h]
+    mov  rcx, rsp
+    mov  rdx, [rsp + CPUContext_size + 00h]
+    mov  r8,  [rsp + CPUContext_size + 08h]
     xor  r9,  r9
 
-    call ExceptionHandler
-    add  rsp, 20h
+    call InterruptHandler
+    add  rsp, CPUContext_size + 10h
 
     iretq
-
-[BITS 32]
-__cli:
-    cli
-    ret
-
-__sti:
-    sti
-    ret
 
 __magic:
     xchg bx,    bx
     ret
 
-__enableSSE:                ; enable SSE instructions (CR4.OSFXSR = 1)  
-    ENABLE_CR_FLAG CR4, CR4.OSFXSR
+__invalidate_TLB:
+    ;
+    ; invalidate all entries in the TLB (Translation Lookaside Buffers)
+    ; where the processor may cache information about the translation of linear addresses
+    ;
+    mov  rax,    cr3
+    mov  cr3,    rax
     ret
 
 segment .data
@@ -269,7 +262,7 @@ _page_map_level_4:
 
 gISR_stub_table:
 %assign i 0
-%rep    32
+%rep    34
     dq isr_stub_%+i
     %assign i i+1
 %endrep
@@ -313,4 +306,3 @@ struc CPUContext
     .dr6    resq 1
     .dr7    resq 1
 endstruc
-CPU_CONTEXT resb CPUContext_size

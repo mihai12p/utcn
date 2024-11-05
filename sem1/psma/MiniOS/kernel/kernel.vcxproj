@@ -134,14 +134,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Interrupts.c" />
+    <ClCompile Include="Keyboard.c" />
     <ClCompile Include="logging.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="PIC.c" />
     <ClCompile Include="screen.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Interrupts.h" />
+    <ClInclude Include="Keyboard.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="PIC.h" />
+    <ClInclude Include="Scancode.h" />
     <ClInclude Include="screen.h" />
   </ItemGroup>
   <ItemGroup>

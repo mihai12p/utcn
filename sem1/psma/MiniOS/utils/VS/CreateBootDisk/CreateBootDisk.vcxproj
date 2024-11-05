@@ -49,7 +49,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>cmd.exe /c "cd ../../.. &amp; compile.cmd"</Command>
+      <Command>cmd.exe /c "cd ../../../ &amp; compile.cmd"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>

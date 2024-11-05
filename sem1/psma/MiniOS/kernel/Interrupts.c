@@ -1,8 +1,11 @@
 #include "Interrupts.h"
 #include "logging.h"
+#include "PIC.h"
+#include "Keyboard.h"
+#include "screen.h"
 
-#define IDT_MAX_DESCRIPTORS    256
-#define IDT_INIT_DESCRIPTORS   32
+#define IDT_MAX_DESCRIPTORS    (256)
+#define IDT_INIT_DESCRIPTORS   (34)
 
 extern PVOID gISR_stub_table[];
 
@@ -45,7 +48,9 @@ static EXCEPTION_INFO gExceptionInfo[IDT_INIT_DESCRIPTORS] = {
     { "Hypervisor Injection Exception (#HV)",       EXCEPTION_HV        }, // 28 (Intel-specific)
     { "VMM Communication Exception (#VC)",          EXCEPTION_VC        }, // 29 (Intel-specific)
     { "Security Exception (#SX)",                   EXCEPTION_SX        }, // 30
-    { "Reserved",                                   EXCEPTION_RES9      }  // 31
+    { "Reserved",                                   EXCEPTION_RES9      }, // 31
+    { "Reserved",                                   INTERRUPT_TIMER     }, // 32
+    { "Reserved",                                   INTERRUPT_KB        }  // 33
 };
 
 static
@@ -195,55 +200,100 @@ PrintStackFrame(
 
 static
 VOID
-HandleException(
-    int*  ExceptionHandled,
-    QWORD InterruptIdx
+HandleInterrupt(
+    _Out_ int*         InterruptHandled,
+    _In_  PCPU_CONTEXT Context,
+    _In_  QWORD        InterruptIdx,
+    _In_  QWORD        ErrorCode
 )
 {
-    *ExceptionHandled = 0;
+    *InterruptHandled = 0;
 
-    if (InterruptIdx >= 32)
+    if (InterruptIdx <= 31)
     {
-        return;
+        PrintTrapInfo(Context, InterruptIdx, (DWORD)ErrorCode);
+        PrintRegisters(Context);
+        PrintStackFrame(Context);
     }
 
     EXCEPTION_INFO exceptionInfo = gExceptionInfo[InterruptIdx];
-
     switch (exceptionInfo.ExceptionId)
     {
     case EXCEPTION_BP:
     {
         __magic();
-        *ExceptionHandled = 1;
+        break;
+    }
+    case INTERRUPT_TIMER:
+    {
+        PIC_sendEOI(0);
+        break;
+    }
+    case INTERRUPT_KB:
+    {
+        static int nextIsExtended = 0;
+
+        BYTE scancode = __inbyte(KBD_DATA_PORT);
+        if (scancode == 0xE0 || scancode == 0xE1)
+        {
+            nextIsExtended = 1;
+            goto __kb_finally;
+        }
+
+        KEYCODE keycode = KEY_UNKNOWN;
+        Scancode2Keycode(&keycode, scancode, nextIsExtended);
+        nextIsExtended = 0;
+
+        //
+        // ignore key release
+        //
+        int isKeyRelease = (keycode & 0x8000) != 0;
+        if (isKeyRelease)
+        {
+            goto __kb_finally;
+        }
+
+        if ((KEY_A <= keycode && keycode <= KEY_Z) ||
+            (KEY_0 <= keycode && keycode <= KEY_9))
+        {
+            PutChar(keycode);
+        }
+        else
+        {
+            //
+            // ignore for the moment
+            //
+        }
+
+__kb_finally:
+        PIC_sendEOI(1);
         break;
     }
     default:
     {
-        break;
+        return;
     }
     }
+
+    *InterruptHandled = 1;
 }
 
 VOID
-ExceptionHandler(
-    PCPU_CONTEXT Context,
-    QWORD        InterruptIdx,
-    QWORD        ErrorCode,
-    QWORD        Reserved
+InterruptHandler(
+    _In_ PCPU_CONTEXT Context,
+    _In_ QWORD        InterruptIdx,
+    _In_ QWORD        ErrorCode,
+    _In_ QWORD        Reserved
 )
 {
-    PrintTrapInfo(Context, InterruptIdx, (DWORD)ErrorCode);
-    PrintRegisters(Context);
-    PrintStackFrame(Context);
-
-    int exceptionHandled = 0;
-    HandleException(&exceptionHandled, InterruptIdx);
-    if (exceptionHandled)
+    int interruptHandled = 0;
+    HandleInterrupt(&interruptHandled, Context, InterruptIdx, ErrorCode);
+    if (interruptHandled)
     {
         return;
     }
 
-    __cli();
+    _disable();
     __halt();
 }
 
@@ -251,11 +301,11 @@ VOID
 InitInterrupts()
 {
     gIDTR.Limit = (sizeof(IDT_ENTRY) * IDT_MAX_DESCRIPTORS) - 1;
-    gIDTR.Base = (QWORD)&gIDT[0];
+    gIDTR.Base = (QWORD)&gIDT[0] | TERABYTE;
 
     for (WORD idx = 0; idx < IDT_INIT_DESCRIPTORS; ++idx)
     {
-        QWORD handler = (QWORD)gISR_stub_table[idx];
+        QWORD handler = (QWORD)gISR_stub_table[idx] | TERABYTE;
 
         gIDT[idx].OffsetLow = OFFSET_LOW(handler);
         gIDT[idx].SegmentSelector = 0x08;
@@ -273,5 +323,25 @@ InitInterrupts()
     }
 
     __lidt(&gIDTR);
-    __sti();
+
+    //
+    // remap PIC
+    //
+    PIC_remap(PIC1_OFFSET, PIC2_OFFSET);
+
+    //
+    // initialize PIT to 100 Hz
+    //
+    PIT_init(100);
+    KeyboardInit();
+
+    for (BYTE i = 0; i < 2 * 8; ++i)
+    {
+        IRQ_set_mask(i);
+    }
+
+    IRQ_clear_mask(0); // Timer
+    IRQ_clear_mask(1); // Keyboard
+
+    _enable();
 }

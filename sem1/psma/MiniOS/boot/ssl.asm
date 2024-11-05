@@ -126,13 +126,6 @@ GDT:
     .limit  dw  GDTTable.end - GDTTable - 1
     .base   dd  GDTTable
 
-FLAT_DESCRIPTOR_CODE64  equ 0x002F9A000000FFFF  ; Code: Execute/Read
-FLAT_DESCRIPTOR_DATA64  equ 0x00CF92000000FFFF  ; Data: Read/Write
-FLAT_DESCRIPTOR_CODE32  equ 0x00CF9A000000FFFF  ; Code: Execute/Read
-FLAT_DESCRIPTOR_DATA32  equ 0x00CF92000000FFFF  ; Data: Read/Write
-FLAT_DESCRIPTOR_CODE16  equ 0x00009B000000FFFF  ; Code: Execute/Read, accessed
-FLAT_DESCRIPTOR_DATA16  equ 0x000093000000FFFF  ; Data: Read/Write, accessed
-    
 GDTTable:
     ;                                        Index
     .null     dq 0                         ;  0

@@ -24,10 +24,17 @@ IA32_EFER_MSR.LME           equ BIT(8)
 
 KILOBYTE                    equ (1024)
 MEGABYTE                    equ (1024 * (KILOBYTE))
-GIGABYTE                    equ (1024 * (GIGABYTE))
-TERABYTE                    equ (1024 * (TERABYTE))
+GIGABYTE                    equ (1024 * (MEGABYTE))
+TERABYTE                    equ (1024 * (GIGABYTE))
 
 TOP_OF_STACK                equ (0x200000)
+
+FLAT_DESCRIPTOR_CODE64      equ 0x002F9A000000FFFF  ; Code: Execute/Read
+FLAT_DESCRIPTOR_DATA64      equ 0x00CF92000000FFFF  ; Data: Read/Write
+FLAT_DESCRIPTOR_CODE32      equ 0x00CF9A000000FFFF  ; Code: Execute/Read
+FLAT_DESCRIPTOR_DATA32      equ 0x00CF92000000FFFF  ; Data: Read/Write
+FLAT_DESCRIPTOR_CODE16      equ 0x00009B000000FFFF  ; Code: Execute/Read, accessed
+FLAT_DESCRIPTOR_DATA16      equ 0x000093000000FFFF  ; Data: Read/Write, accessed
 
 ;
 ; MACROS

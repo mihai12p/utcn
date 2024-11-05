@@ -24,12 +24,15 @@ typedef VOID*               PVOID;
 #define OFFSET_MID(x)       (((x) >> 16) & 0xFFFF)
 #define OFFSET_HIGH(x)      (((x) >> 32) & 0xFFFFFFFF)
 
+#define KILOBYTE            (1024)
+#define MEGABYTE            (1024 * ((QWORD)KILOBYTE))
+#define GIGABYTE            (1024 * ((QWORD)MEGABYTE))
+#define TERABYTE            (1024 * ((QWORD)GIGABYTE))
+
 //
-// exported functions from __init.asm
+// MAGIC breakpoint into BOCHS (XCHG BX,BX)
 //
-void __cli(void);
-void __sti(void);
-void __magic(void);         // MAGIC breakpoint into BOCHS (XCHG BX,BX)
-void __enableSSE(void);
+VOID
+__magic();
 
 #endif // _MAIN_H_
