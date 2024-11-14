@@ -2,6 +2,7 @@
 #include "logging.h"
 #include "PIC.h"
 #include "Keyboard.h"
+#include "CLI.h"
 #include "screen.h"
 
 #define IDT_MAX_DESCRIPTORS    (256)
@@ -9,8 +10,10 @@
 
 extern PVOID gISR_stub_table[];
 
-_Alignas(16) IDT_ENTRY gIDT[IDT_MAX_DESCRIPTORS];
-IDT_PTR                gIDTR;
+_Alignas(16) static IDT_ENTRY gIDT[IDT_MAX_DESCRIPTORS] = { 0 };
+static IDT_PTR                gIDTR = { 0 };
+
+static int gNextIsExtended = 0;
 
 //
 // https://wiki.osdev.org/Exceptions
@@ -231,39 +234,32 @@ HandleInterrupt(
     }
     case INTERRUPT_KB:
     {
-        static int nextIsExtended = 0;
-
         BYTE scancode = __inbyte(KBD_DATA_PORT);
         if (scancode == 0xE0 || scancode == 0xE1)
         {
-            nextIsExtended = 1;
+            gNextIsExtended = 1;
             goto __kb_finally;
+        }
+
+        int isKeyRelease = (scancode & 0x80) != 0;
+        if (isKeyRelease)
+        {
+            //
+            // unset the release bit
+            //
+            scancode &= 0x7F;
         }
 
         KEYCODE keycode = KEY_UNKNOWN;
-        Scancode2Keycode(&keycode, scancode, nextIsExtended);
-        nextIsExtended = 0;
+        Scancode2Keycode(&keycode, scancode, gNextIsExtended);
+        gNextIsExtended = 0;
 
-        //
-        // ignore key release
-        //
-        int isKeyRelease = (keycode & 0x8000) != 0;
-        if (isKeyRelease)
+        if (keycode == KEY_UNKNOWN)
         {
             goto __kb_finally;
         }
 
-        if ((KEY_A <= keycode && keycode <= KEY_Z) ||
-            (KEY_0 <= keycode && keycode <= KEY_9))
-        {
-            PutChar(keycode);
-        }
-        else
-        {
-            //
-            // ignore for the moment
-            //
-        }
+        CLI_ProcessInput(keycode, isKeyRelease);
 
 __kb_finally:
         PIC_sendEOI(1);
@@ -334,6 +330,7 @@ InitInterrupts()
     //
     PIT_init(100);
     KeyboardInit();
+    CLI_Init();
 
     for (BYTE i = 0; i < 2 * 8; ++i)
     {

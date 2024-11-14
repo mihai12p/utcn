@@ -62,7 +62,7 @@ Scancode2Keycode(
 {
     *Keycode = KEY_UNKNOWN;
 
-    if (IsExtended)
+    if (IsExtended == 1)
     {
         if (Scancode < (sizeof(gKeyboard_scancode_ext) / sizeof(gKeyboard_scancode_ext[0])))
         {

@@ -6,23 +6,17 @@
 VOID
 KernelMain()
 {
-    InitInterrupts();
-
-    ClearScreen();
+    InitScreen();
 
     InitLogging();
 
     LogMessage("Logging initialized!\r\n\r\n");
 
-    HelloBoot();
+    InitInterrupts();
 
     while (1);
 
     __debugbreak();
-    
-    // TODO!!! Timer programming
-
-    // TODO!!! Implement a simple console
 
     // TODO!!! read disk sectors using PIO mode ATA
 

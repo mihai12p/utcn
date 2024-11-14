@@ -44,7 +44,7 @@ typedef enum _KEYCODE
     KEY_Y = 'y',
     KEY_Z = 'z',
 
-    KEY_RETURN = '\r',
+    KEY_RETURN = '\r\n',
     KEY_ESCAPE = 0x1001,
     KEY_BACKSPACE = '\b',
 

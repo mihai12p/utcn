@@ -1,7 +1,10 @@
 #include "screen.h"
 #include "PIC.h"
+#include "String.h"
 
 static PSCREEN gVideo = (PSCREEN)(0x000B8000 | TERABYTE);
+static SCREEN_BUFFER gCLIScreenBuffer = { 0 };
+static SCREEN_BUFFER gEditScreenBuffer = { 0 };
 
 static
 VOID
@@ -55,24 +58,57 @@ SetCursorPosition(
 }
 
 VOID
-HelloBoot()
+InitScreen()
 {
-    char boot[] = "Hello Boot! Greetings from C...";
+    memnset(gCLIScreenBuffer.CursorCharacter, 0, sizeof(gCLIScreenBuffer.CursorCharacter));
+    gCLIScreenBuffer.CursorPosition = 0;
 
-    int len = 0;
-    while (boot[len] != '\0')
+    memnset(gEditScreenBuffer.CursorCharacter, 0, sizeof(gEditScreenBuffer.CursorCharacter));
+    gEditScreenBuffer.CursorPosition = 0;
+
+    ClearScreen();
+
+    for (int i = 0; i < MAX_OFFSET; ++i)
     {
-        ++len;
+        gEditScreenBuffer.CursorCharacter[i].color = 10;
+        gEditScreenBuffer.CursorCharacter[i].c = ' ';
     }
 
-    int i = 0;
-    for (i = 0; (i < len) && (i < MAX_OFFSET); ++i)
-    {
-        gVideo[i].color = 10;
-        gVideo[i].c = boot[i];
-    }
+    CursorMove(0, 0);
+}
 
-    SetCursorPosition(MAX_COLUMNS);
+VOID
+SaveScreen(
+    _In_ int IsEditScreen
+)
+{
+    if (IsEditScreen)
+    {
+        memncpy(gEditScreenBuffer.CursorCharacter, gVideo, sizeof(gEditScreenBuffer.CursorCharacter));
+        GetCursorPosition(&gEditScreenBuffer.CursorPosition);
+    }
+    else
+    {
+        memncpy(gCLIScreenBuffer.CursorCharacter, gVideo, sizeof(gCLIScreenBuffer.CursorCharacter));
+        GetCursorPosition(&gCLIScreenBuffer.CursorPosition);
+    }
+}
+
+VOID
+RestoreScreen(
+    _In_ int IsEditScreen
+)
+{
+    if (IsEditScreen)
+    {
+        memncpy(gVideo, gEditScreenBuffer.CursorCharacter, sizeof(gEditScreenBuffer.CursorCharacter));
+        SetCursorPosition(gEditScreenBuffer.CursorPosition);
+    }
+    else
+    {
+        memncpy(gVideo, gCLIScreenBuffer.CursorCharacter, sizeof(gCLIScreenBuffer.CursorCharacter));
+        SetCursorPosition(gCLIScreenBuffer.CursorPosition);
+    }
 }
 
 VOID
@@ -97,6 +133,10 @@ PutChar(
     //
     WORD currentPosition = 0;
     GetCursorPosition(&currentPosition);
+    if (currentPosition >= MAX_OFFSET)
+    {
+        return;
+    }
 
     //
     // write character and attribute
@@ -108,4 +148,150 @@ PutChar(
     // update cursor position
     //
     SetCursorPosition(++currentPosition);
+}
+
+VOID
+RemoveChar()
+{
+    //
+    // get current cursor position
+    //
+    WORD currentPosition = 0;
+    GetCursorPosition(&currentPosition);
+    if (currentPosition == 0)
+    {
+        return;
+    }
+
+    //
+    // write character and attribute
+    //
+    gVideo[currentPosition - 1].color = 10;
+    gVideo[currentPosition - 1].c = '\0';
+
+    //
+    // update cursor position
+    //
+    SetCursorPosition(--currentPosition);
+}
+
+static
+VOID
+EraseCurrentLineContents(
+    _In_ WORD* NewPosition,
+    _In_ WORD  CurrentPosition
+)
+{
+    int currentRowIdx = CurrentPosition / MAX_COLUMNS;
+    *NewPosition = CurrentPosition = currentRowIdx * MAX_COLUMNS;
+    for (int i = 0; i < MAX_COLUMNS; ++i)
+    {
+        gVideo[CurrentPosition + i].color = 10;
+        gVideo[CurrentPosition + i].c = ' ';
+    }
+}
+
+VOID
+PutString(
+    _In_ char* Buffer,
+    _In_ int   EraseLineContents
+)
+{
+    //
+    // get current cursor position
+    //
+    WORD currentPosition = 0;
+    GetCursorPosition(&currentPosition);
+
+    if (EraseLineContents)
+    {
+        EraseCurrentLineContents(&currentPosition, currentPosition);
+    }
+
+    //
+    // write characters and attribute
+    //
+    int bufferSize = (int)strlen(Buffer);
+    for (int i = 0; i < bufferSize; ++i)
+    {
+        gVideo[currentPosition + i].color = 10;
+        gVideo[currentPosition + i].c = Buffer[i];
+    }
+
+    //
+    // update cursor position
+    //
+    SetCursorPosition(currentPosition + bufferSize);
+}
+
+static
+VOID
+MoveCursor(
+    _In_ int Row,
+    _In_ int Column
+)
+{
+    //
+    // get current cursor position
+    //
+    WORD currentPosition = 0;
+    GetCursorPosition(&currentPosition);
+
+    int currentRowIdx = currentPosition / MAX_COLUMNS;
+    int currentColumnIdx = currentPosition % MAX_COLUMNS;
+    if (currentRowIdx + Row == -1 || currentRowIdx + Row == MAX_LINES ||
+        currentColumnIdx + Column == -1 || currentColumnIdx + Column == MAX_COLUMNS)
+    {
+        return;
+    }
+
+    //
+    // update cursor position
+    //
+    SetCursorPosition((currentRowIdx + Row) * MAX_COLUMNS + currentColumnIdx + Column);
+}
+
+VOID
+MoveCursorNewLine()
+{
+    //
+    // get current cursor position
+    //
+    WORD currentPosition = 0;
+    GetCursorPosition(&currentPosition);
+
+    int currentRowIdx = currentPosition / MAX_COLUMNS;
+    if (currentRowIdx + 1 == MAX_LINES)
+    {
+        return;
+    }
+
+    //
+    // update cursor position
+    //
+    SetCursorPosition((currentRowIdx + 1) * MAX_COLUMNS);
+}
+
+VOID
+MoveCursorLineDown()
+{
+    MoveCursor(1, 0);
+}
+
+VOID
+MoveCursorLineUp()
+{
+    MoveCursor(-1, 0);
+}
+
+VOID
+MoveCursorColumnRight()
+{
+    MoveCursor(0, 1);
+}
+
+VOID
+MoveCursorColumnLeft()
+{
+    MoveCursor(0, -1);
 }
