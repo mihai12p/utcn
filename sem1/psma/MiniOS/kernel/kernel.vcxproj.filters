@@ -45,6 +45,9 @@
     <ClCompile Include="Edit.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ATA.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="screen.h">
@@ -78,6 +81,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Edit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ATA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

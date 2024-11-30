@@ -7,23 +7,28 @@ VOID
 InitLogging();
 
 VOID
+LogByte(
+    _In_ BYTE Value
+);
+
+VOID
 LogWord(
-    WORD Value
+    _In_ WORD Value
 );
 
 VOID
 LogDword(
-    DWORD Value
+    _In_ DWORD Value
 );
 
 VOID
 LogQword(
-    QWORD Value
+    _In_ QWORD Value
 );
 
 VOID
 LogMessage(
-    const char* Message
+    _In_ const char* Message
 );
 
 

@@ -2,6 +2,7 @@
 #include "screen.h"
 #include "logging.h"
 #include "Interrupts.h"
+#include "ATA.h"
 
 VOID
 KernelMain()
@@ -13,6 +14,8 @@ KernelMain()
     LogMessage("Logging initialized!\r\n\r\n");
 
     InitInterrupts();
+
+    ATA_DetectDevice();
 
     while (1);
 

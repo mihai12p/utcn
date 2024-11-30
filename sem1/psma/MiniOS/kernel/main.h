@@ -23,6 +23,7 @@ typedef VOID*               PVOID;
 #define OFFSET_LOW(x)       ((x) & 0xFFFF)
 #define OFFSET_MID(x)       (((x) >> 16) & 0xFFFF)
 #define OFFSET_HIGH(x)      (((x) >> 32) & 0xFFFFFFFF)
+#define FIELD_OFFSET(T, E)  ((size_t)&(((T *)0)->E))
 
 #define KILOBYTE            (1024)
 #define MEGABYTE            (1024 * ((QWORD)KILOBYTE))

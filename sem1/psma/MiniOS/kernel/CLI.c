@@ -3,6 +3,8 @@
 #include "RTC.h"
 #include "String.h"
 #include "Edit.h"
+#include "ATA.h"
+#include "logging.h"
 
 #define CLI_COMMAND_BUFFER_SIZE     (2048)
 #define MAX_COMMAND_COUNT           (10)
@@ -217,6 +219,37 @@ CLI_CommandEdit(
     SetEditMode(1);
 }
 
+static
+VOID
+CLI_CommandPrintMbr(
+    _In_opt_ char* Arguments
+)
+{
+    BYTE buffer[ATA_SECTOR_SIZE] = { 0 };
+    (VOID)ATA_ReadData(buffer, ATA_PRIMARY, ATA_MASTER, 0, sizeof(buffer));
+
+    for (int i = 0; i < __crt_countof(buffer); i += 16)
+    {
+        LogDword(i); LogMessage(": ");
+        for (int j = 0; j < 16; ++j)
+        {
+            LogByte(buffer[i + j]); LogMessage(" ");
+        }
+        LogMessage(" | ");
+        for (int j = 0; j < 16; ++j)
+        {
+            char c = buffer[i + j];
+            if (!c)
+            {
+                c = '.';
+            }
+            char message[] = { c, '\0' };
+            LogMessage(message);
+        }
+        LogMessage("\n");
+    }
+}
+
 VOID
 CLI_Init()
 {
@@ -224,6 +257,7 @@ CLI_Init()
     CLI_RegisterCommand("cls",      CLI_CommandClear);
     CLI_RegisterCommand("time",     CLI_CommandTime);
     CLI_RegisterCommand("edit",     CLI_CommandEdit);
+    CLI_RegisterCommand("printmbr", CLI_CommandPrintMbr);
 }
 
 static

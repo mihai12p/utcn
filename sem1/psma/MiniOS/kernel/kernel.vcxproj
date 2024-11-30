@@ -27,7 +27,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -55,7 +55,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
@@ -63,7 +63,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ExceptionHandling>false</ExceptionHandling>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
       <AdditionalOptions>/noover %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -84,7 +84,7 @@
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalOptions>/FILEALIGN:0x1000 /ALIGN:0x1000 /ignore:4108 %(AdditionalOptions)</AdditionalOptions>
-      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>"$(ProjectDir)postbuild.cmd" "$(SolutionDir)" "$(TargetPath)"</Command>
@@ -104,7 +104,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ExceptionHandling>false</ExceptionHandling>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
       <AdditionalOptions>/noover %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -127,7 +127,7 @@
       <FixedBaseAddress>true</FixedBaseAddress>
       <DataExecutionPrevention>false</DataExecutionPrevention>
       <AdditionalOptions>/FILEALIGN:0x1000 /ALIGN:0x1000 /ignore:4108 /ignore:4281 %(AdditionalOptions)</AdditionalOptions>
-      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>"$(ProjectDir)postbuild.cmd" "$(SolutionDir)" "$(TargetPath)"</Command>
@@ -137,6 +137,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ATA.c" />
     <ClCompile Include="CLI.c" />
     <ClCompile Include="Edit.c" />
     <ClCompile Include="Interrupts.c" />
@@ -149,6 +150,7 @@
     <ClCompile Include="String.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ATA.h" />
     <ClInclude Include="CLI.h" />
     <ClInclude Include="Edit.h" />
     <ClInclude Include="Interrupts.h" />

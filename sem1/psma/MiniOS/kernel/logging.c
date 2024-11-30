@@ -23,10 +23,11 @@ IsLineReady()
     return (__inbyte(0x3FD) & 0x60) == 0x60;
 }
 
+static
 VOID
 LogHex(
-    QWORD Value,
-    BYTE  DigitsCount
+    _In_ QWORD Value,
+    _In_ BYTE  DigitsCount
 )
 {
     const char* hexDigits = "0123456789abcdef";
@@ -46,8 +47,16 @@ LogHex(
 }
 
 VOID
+LogByte(
+    _In_ BYTE Value
+)
+{
+    LogHex(Value, 2);
+}
+
+VOID
 LogWord(
-    WORD Value
+    _In_ WORD Value
 )
 {
     LogHex(Value, 4);
@@ -55,7 +64,7 @@ LogWord(
 
 VOID
 LogDword(
-    DWORD Value
+    _In_ DWORD Value
 )
 {
     LogHex(Value, 8);
@@ -63,7 +72,7 @@ LogDword(
 
 VOID
 LogQword(
-    QWORD Value
+    _In_ QWORD Value
 )
 {
     LogHex(Value, 16);
@@ -71,7 +80,7 @@ LogQword(
 
 VOID
 LogMessage(
-    const char* Message
+    _In_ const char* Message
 )
 {
     for (int i = 0; Message[i]; ++i)
