@@ -1,0 +1,43 @@
+1. Buffer-overflow vulnerability #1
+    Affected lines (in the original file): 54
+    Description: The command buffer can accomodate maximum 10 bytes (9 characters + null terminator). However,
+                 this limit is ignored in the subsequent call to scanf where we can pass more characters and overwrite
+                 more than we are allowed to, we overwrite values on the stack.
+    Solution: scanf_s("%9s", command, _countof(command));
+2. Buffer-overflow vulnerability #2
+    Affected lines (in the original file): 58, 59, 66, 67, 79, 80, 87, 88
+    Description: same as the vulnerability described above with the change that the buffers have a length of 260 bytes
+                 instead of 10 so we have to write much more characters (>= 260) in the console if we want to overwrite something on the stack
+    Solution: scanf_s("%259s", arg1, _countof(arg1));
+              scanf_s("%259s", arg2, _countof(arg2));
+3. String not null-terminated
+    Affected lines (in the original file): 54, 62, 70, 83, 91
+    Description: command, arg1 and arg2 are not null-initialized and accidents might happen (e.g. credentials leakage)
+    Solution: ZeroMemory(command, _countof(command));
+              SecureZeroMemory(arg1, _countof(arg1));
+              SecureZeroMemory(arg2, _countof(arg2));
+
+              adding these 3 lines right before do while (TRUE)
+
+              and initialize buffers with 0
+
+              char command[10] = { 0 };
+              char arg1[MAX_PATH] = { 0 };
+              char arg2[MAX_PATH] = { 0 };
+
+              and replace while (TRUE) with while (!shouldExit)
+              init at the start int shouldExit = 0; and set it to 1 instead of the break;
+4. Paths with spaces causes issues
+    Affected lines (in the original file): 80, 81, 88, 89
+    Description: since scanf does stop when it sees a space character (' '), if our path has minimum one, we might gain unauthorized access
+    Solution: scanf_s(" \"%259[^\"]\"", arg1, _countof(arg1));    // source file path
+              scanf_s("%259s", arg2, _countof(arg2));             // submission name
+              This way we enforce the input path to be enclosed in quotes.
+5. User can remain logged in
+    Affected lines: where we handle the exit command
+    Description: since a user can log in and therefore it can exit, allocated data is not deallocated and the system thinks that an user is still logged in
+    Solution: check if a user is still logged in before exiting, and if so, logout
+6. Credentials are shown in plain text to the user
+    Affected lines: printfs for register and login
+    Description: credentials are shown in plain text to the user
+    Solution: do not print out the entered password
