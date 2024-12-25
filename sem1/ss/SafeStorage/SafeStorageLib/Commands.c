@@ -184,7 +184,7 @@ SafeStorageHandleRegister(
         return HRESULT_FROM_WIN32(lastError);
     }
 
-    HANDLE fileHandle = CreateFileA(gContext.UsersDatabase.Buffer, FILE_GENERIC_WRITE | FILE_GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE fileHandle = CreateFileA(gContext.UsersDatabase.Buffer, FILE_GENERIC_READ | FILE_GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (!IS_VALID_HANDLE(fileHandle))
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -269,7 +269,7 @@ SafeStorageHandleLogin(
         return status;
     }
 
-    HANDLE fileHandle = CreateFileA(gContext.UsersDatabase.Buffer, FILE_GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE fileHandle = CreateFileA(gContext.UsersDatabase.Buffer, FILE_GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (!IS_VALID_HANDLE(fileHandle))
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -389,6 +389,11 @@ SafeStorageHandleStore(
         return status;
     }
 
+    if (SubmissionNameLength == 0)
+    {
+        return STATUS_INVALID_PARAMETER_2;
+    }
+
     ANSI_STRING destFilePath = { 0 };
     destFilePath.Length = gContext.UserContext.UserDirectory.Length + sizeof(CHAR) + SubmissionNameLength;
     destFilePath.MaximumLength = destFilePath.Length + sizeof(ANSI_NULL);
@@ -404,15 +409,23 @@ SafeStorageHandleStore(
     (VOID)strcat_s(destFilePath.Buffer, destFilePath.MaximumLength, SubmissionName);
 
     HANDLE destFileHandle = CreateFileA(destFilePath.Buffer, FILE_GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
-    FreeAnsiString(&destFilePath);
     if (!IS_VALID_HANDLE(destFileHandle))
     {
         DBG_ASSERT(NT_SUCCESS(CloseHandle(srcFileHandle)));
+        FreeAnsiString(&destFilePath);
         return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    status = ValidateFile(destFileHandle, destFilePath.Buffer, destFilePath.Length);
+    FreeAnsiString(&destFilePath);
+    if (!NT_SUCCESS(status))
+    {
+        goto CleanUp;
     }
 
     status = MyCopyFile(srcFileHandle, destFileHandle);
 
+CleanUp:
     DBG_ASSERT(NT_SUCCESS(CloseHandle(destFileHandle)));
     DBG_ASSERT(NT_SUCCESS(CloseHandle(srcFileHandle)));
 
@@ -425,14 +438,19 @@ NTSTATUS
 WINAPI
 SafeStorageHandleRetrieve(
     _In_reads_z_(SubmissionNameLength)      const char* SubmissionName,
-    _In_                                    uint16_t SubmissionNameLength,
+    _In_                                    uint16_t    SubmissionNameLength,
     _In_reads_z_(DestinationFilePathLength) const char* DestinationFilePath,
-    _In_                                    uint16_t DestinationFilePathLength
+    _In_                                    uint16_t    DestinationFilePathLength
 )
 {
     if (!gContext.UserContext.IsLoggedIn)
     {
         return STATUS_NOT_SUPPORTED;
+    }
+
+    if (SubmissionNameLength == 0)
+    {
+        return STATUS_INVALID_PARAMETER_2;
     }
 
     ANSI_STRING srcFilePath = { 0 };
@@ -449,10 +467,18 @@ SafeStorageHandleRetrieve(
     (VOID)strcat_s(srcFilePath.Buffer, srcFilePath.MaximumLength, SubmissionName);
 
     HANDLE srcFileHandle = CreateFileA(srcFilePath.Buffer, FILE_GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
-    FreeAnsiString(&srcFilePath);
     if (!IS_VALID_HANDLE(srcFileHandle))
     {
+        FreeAnsiString(&srcFilePath);
         return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    NTSTATUS status = ValidateFile(srcFileHandle, srcFilePath.Buffer, srcFilePath.Length);
+    FreeAnsiString(&srcFilePath);
+    if (!NT_SUCCESS(status))
+    {
+        DBG_ASSERT(NT_SUCCESS(CloseHandle(srcFileHandle)));
+        return status;
     }
 
     HANDLE destFileHandle = CreateFileA(DestinationFilePath, FILE_GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
@@ -462,7 +488,7 @@ SafeStorageHandleRetrieve(
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    NTSTATUS status = ValidateFile(destFileHandle, DestinationFilePath, DestinationFilePathLength);
+    status = ValidateFile(destFileHandle, DestinationFilePath, DestinationFilePathLength);
     if (!NT_SUCCESS(status))
     {
         goto CleanUp;

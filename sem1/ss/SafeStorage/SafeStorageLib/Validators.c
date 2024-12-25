@@ -207,9 +207,10 @@ ValidateFile(
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
+    LPCSTR filePathNoPrefix = strchr(filePath, ':') - sizeof(CHAR);
     LPCSTR relativePath = FilePath + index;
     size_t relativePathLength = strlen(relativePath);
-    size_t filePathLength = strlen(filePath);
+    size_t filePathLength = strlen(filePathNoPrefix);
 
     if (filePathLength < relativePathLength)
     {
@@ -219,7 +220,7 @@ ValidateFile(
     //
     // Perform an ends-with comparison.
     //
-    if (_stricmp(filePath + filePathLength - relativePathLength, relativePath))
+    if (_stricmp(filePathNoPrefix + filePathLength - relativePathLength, relativePath))
     {
         return STATUS_FILE_NOT_SUPPORTED;
     }

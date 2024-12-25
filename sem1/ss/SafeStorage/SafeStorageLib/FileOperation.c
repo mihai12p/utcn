@@ -34,6 +34,7 @@ ReadLineFromFile(
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
+    LPSTR currentIdx = buffer;
     ULONG32 totalBytesRead = 0;
     BOOL status = FALSE;
 
@@ -74,7 +75,7 @@ ReadLineFromFile(
             continue;
         }
 
-        buffer[totalBytesRead++] = ch;
+        currentIdx[totalBytesRead++] = ch;
 
         if (ch == '\n')
         {
@@ -90,7 +91,7 @@ ReadLineFromFile(
         }
     }
 
-    buffer[totalBytesRead] = ANSI_NULL;
+    currentIdx[totalBytesRead] = ANSI_NULL;
 
     *LineBuffer = buffer;
     *BytesRead = totalBytesRead;

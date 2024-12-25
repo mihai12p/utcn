@@ -293,6 +293,50 @@ TEST_CLASS(UserActivityTest)
                                         static_cast<uint16_t>(strlen(password)));
         Assert::IsFalse(NT_SUCCESS(status));
     };
+
+    TEST_METHOD(PathTraversal)
+    {
+        NTSTATUS status = STATUS_UNSUCCESSFUL;
+        const char username[] = "UserI";
+        const char password[] = "PassWord1@";
+
+        const char submissionName[] = "..\\Homework";
+        const char submissionFilePath[] = ".\\dummyData";
+
+        // Drop dummy data for transfer test
+        {
+            std::ofstream transferFileTest(submissionFilePath);
+            transferFileTest << "This is a dummy content";
+        }
+
+        status = SafeStorageHandleRegister(username,
+                                           static_cast<uint16_t>(strlen(username)),
+                                           password,
+                                           static_cast<uint16_t>(strlen(password)));
+        Assert::IsTrue(NT_SUCCESS(status));
+
+        status = SafeStorageHandleLogin(username,
+                                        static_cast<uint16_t>(strlen(username)),
+                                        password,
+                                        static_cast<uint16_t>(strlen(password)));
+        Assert::IsTrue(NT_SUCCESS(status));
+
+        status = SafeStorageHandleStore(submissionName,
+                                        static_cast<uint16_t>(strlen(submissionName)),
+                                        submissionFilePath,
+                                        static_cast<uint16_t>(strlen(submissionFilePath)));
+        Assert::IsFalse(NT_SUCCESS(status));
+
+        Assert::IsFalse(std::filesystem::is_regular_file(".\\users\\UserI\\Homework"));
+        status = SafeStorageHandleRetrieve(submissionName,
+                                           static_cast<uint16_t>(strlen(submissionName)),
+                                           submissionFilePath,
+                                           static_cast<uint16_t>(strlen(submissionFilePath)));
+        Assert::IsFalse(NT_SUCCESS(status));
+
+        status = SafeStorageHandleLogout();
+        Assert::IsTrue(NT_SUCCESS(status));
+    };
 };
 
 };
