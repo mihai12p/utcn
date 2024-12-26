@@ -31,4 +31,11 @@ memnset(
     _In_                       QWORD Length
 );
 
+_Must_inspect_result_
+char*
+strchr(
+    _In_ const char* String,
+    _In_ char        Character
+);
+
 #endif//_STRING_H_

@@ -5,11 +5,13 @@
 #include "Edit.h"
 #include "ATA.h"
 #include "logging.h"
+#include "TestMemory.h"
 
 #define CLI_COMMAND_BUFFER_SIZE     (2048)
+#define MAX_COMMAND_ARGUMENT_SIZE   (64)
 #define MAX_COMMAND_COUNT           (10)
 #define MAX_COMMAND_HISTORY_COUNT   (10)
-#define MAX_COMMAND_NAME_CHARACTERS (10)
+#define MAX_COMMAND_NAME_CHARACTERS (15)
 
 typedef struct _CLI_BUFFER
 {
@@ -19,7 +21,7 @@ typedef struct _CLI_BUFFER
 
 typedef
 VOID(* _CLI_COMMAND_FUNC)(
-    _In_opt_ char* Arguments
+    _In_opt_ const char* Arguments
 );
 
 typedef struct _CLI_COMMAND
@@ -35,11 +37,12 @@ typedef struct _CLI_COMMANDS
     CLI_COMMAND CommandHistory[MAX_COMMAND_HISTORY_COUNT];
     int         CommandHistoryCount;
     int         CommandHistoryIndex;
-} CLI_COMMANDS;
+} CLI_COMMANDS, * PCLI_COMMANDS;
 
 static CLI_BUFFER   gCLIBuffer = { 0 };
 static CLI_BUFFER   gEditBuffer = { 0 };
 static CLI_COMMANDS gCommands = { 0 };
+static CLI_COMMANDS gTestcases = { 0 };
 
 static int gIsUppercase = 0;
 
@@ -125,37 +128,39 @@ CLI_SaveCommandInHistory(
 static
 VOID
 CLI_RegisterCommand(
+    _In_ PCLI_COMMANDS     Instance,
     _In_ const char*       CommandName,
     _In_ _CLI_COMMAND_FUNC CommandFunction
 )
 {
-    if (gCommands.CommandCount >= MAX_COMMAND_COUNT)
+    if (Instance->CommandCount >= MAX_COMMAND_COUNT)
     {
         return;
     }
 
-    strcpy(gCommands.Command[gCommands.CommandCount].Name, CommandName);
-    gCommands.Command[gCommands.CommandCount].Function = CommandFunction;
-    ++gCommands.CommandCount;
+    strcpy(Instance->Command[Instance->CommandCount].Name, CommandName);
+    Instance->Command[Instance->CommandCount].Function = CommandFunction;
+    ++Instance->CommandCount;
 }
 
 static
 VOID
 CLI_FindCommand(
-    _Out_ PCLI_COMMAND Command,
-    _In_  const char*  CommandName
+    _Out_ PCLI_COMMAND  Command,
+    _In_  PCLI_COMMANDS Instance,
+    _In_  const char*   CommandName
 )
 {
     Command->Function = NULL;
 
-    for (BYTE i = 0; i < gCommands.CommandCount; ++i)
+    for (BYTE i = 0; i < Instance->CommandCount; ++i)
     {
-        if (strcmp(CommandName, gCommands.Command[i].Name))
+        if (strncmp(CommandName, Instance->Command[i].Name, strlen(Instance->Command[i].Name)))
         {
             continue;
         }
 
-        *Command = gCommands.Command[i];
+        *Command = Instance->Command[i];
         return;
     }
 }
@@ -163,7 +168,7 @@ CLI_FindCommand(
 static
 VOID
 CLI_CommandClear(
-    _In_opt_ char* Arguments
+    _In_opt_ const char* Arguments
 )
 {
     ClearScreen();
@@ -172,7 +177,7 @@ CLI_CommandClear(
 static
 VOID
 CLI_CommandTime(
-    _In_opt_ char* Arguments
+    _In_opt_ const char* Arguments
 )
 {
     int bufferLength = 0;
@@ -206,7 +211,7 @@ CLI_CommandTime(
 static
 VOID
 CLI_CommandEdit(
-    _In_opt_ char* Arguments
+    _In_opt_ const char* Arguments
 )
 {
     if (IsInEditMode())
@@ -222,7 +227,7 @@ CLI_CommandEdit(
 static
 VOID
 CLI_CommandPrintMbr(
-    _In_opt_ char* Arguments
+    _In_opt_ const char* Arguments
 )
 {
     BYTE buffer[ATA_SECTOR_SIZE] = { 0 };
@@ -250,27 +255,81 @@ CLI_CommandPrintMbr(
     }
 }
 
+static
 VOID
-CLI_Init()
+CLI_ExecuteCommand(
+    _In_ PCLI_COMMANDS Instance,
+    _In_ const char*   Command
+)
 {
-    CLI_RegisterCommand("clear",    CLI_CommandClear);
-    CLI_RegisterCommand("cls",      CLI_CommandClear);
-    CLI_RegisterCommand("time",     CLI_CommandTime);
-    CLI_RegisterCommand("edit",     CLI_CommandEdit);
-    CLI_RegisterCommand("printmbr", CLI_CommandPrintMbr);
+    CLI_COMMAND command = { 0 };
+    CLI_FindCommand(&command, Instance, Command);
+    if (command.Function)
+    {
+        if (Instance == &gCommands)
+        {
+            CLI_SaveCommandInHistory(&command);
+        }
+
+        const char* argument = strchr(Command, ' ') + 1;
+        command.Function(argument);
+    }
 }
 
 static
 VOID
-CLI_ExecuteCommand()
+CLI_CommandTestRun(
+    _In_opt_ const char* Arguments
+)
 {
-    CLI_COMMAND command = { 0 };
-    CLI_FindCommand(&command, gCLIBuffer.Buffer);
-    if (command.Function)
+    CLI_ExecuteCommand(&gTestcases, Arguments);
+}
+
+static
+VOID
+CLI_CommandTestList(
+    _In_opt_ const char* Arguments
+)
+{
+    for (int i = 0; i < gTestcases.CommandCount; ++i)
     {
-        CLI_SaveCommandInHistory(&command);
-        command.Function(NULL);
+        PutString(gTestcases.Command[i].Name, 0);
+        MoveCursorNewLine();
     }
+}
+
+static
+VOID
+CLI_CommandTestRunAll(
+    _In_opt_ const char* Arguments
+)
+{
+    for (int i = 0; i < gTestcases.CommandCount; ++i)
+    {
+        CLI_ExecuteCommand(&gTestcases, gTestcases.Command[i].Name);
+    }
+}
+
+VOID
+CLI_Init()
+{
+    //
+    // Commands
+    //
+    CLI_RegisterCommand(&gCommands, "clear",        CLI_CommandClear);
+    CLI_RegisterCommand(&gCommands, "cls",          CLI_CommandClear);
+    CLI_RegisterCommand(&gCommands, "time",         CLI_CommandTime);
+    CLI_RegisterCommand(&gCommands, "edit",         CLI_CommandEdit);
+    CLI_RegisterCommand(&gCommands, "printmbr",     CLI_CommandPrintMbr);
+    CLI_RegisterCommand(&gCommands, "test_run_all", CLI_CommandTestRunAll);
+    CLI_RegisterCommand(&gCommands, "test_run",     CLI_CommandTestRun);
+    CLI_RegisterCommand(&gCommands, "test_list",    CLI_CommandTestList);
+
+    //
+    // Testcases
+    //
+    CLI_RegisterCommand(&gTestcases, "page",        TestcasePage);
+    CLI_RegisterCommand(&gTestcases, "heap",        TestcaseHeap);
 }
 
 VOID
@@ -294,9 +353,14 @@ CLI_ProcessInput(
         return;
     }
 
+    if (Keycode == KEY_KP_MINUS)
+    {
+        Keycode = KEY_UNDERSCORE;
+    }
+
     if ((KEY_A <= Keycode && Keycode <= KEY_Z) ||
         (KEY_0 <= Keycode && Keycode <= KEY_9) ||
-        Keycode == KEY_SPACE)
+        Keycode == KEY_SPACE || Keycode == KEY_UNDERSCORE)
     {
         if (IsUppercase() && (KEY_A <= Keycode && Keycode <= KEY_Z))
         {
@@ -332,7 +396,7 @@ CLI_ProcessInput(
                 char lastChar = gCLIBuffer.Buffer[gCLIBuffer.BufferSize - 1];
                 if (lastChar == '\0')
                 {
-                    CLI_ExecuteCommand();
+                    CLI_ExecuteCommand(&gCommands, gCLIBuffer.Buffer);
                     gCLIBuffer.BufferSize = 0;
                 }
             }

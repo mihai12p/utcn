@@ -6,7 +6,6 @@
 #include "screen.h"
 
 #define IDT_MAX_DESCRIPTORS    (256)
-#define IDT_INIT_DESCRIPTORS   (34)
 
 extern PVOID gISR_stub_table[];
 
@@ -18,7 +17,7 @@ static int gNextIsExtended = 0;
 //
 // https://wiki.osdev.org/Exceptions
 //
-static EXCEPTION_INFO gExceptionInfo[IDT_INIT_DESCRIPTORS] = {
+static EXCEPTION_INFO gExceptionInfo[IDT_MAX_DESCRIPTORS] = {
 //    ExceptionName                                 ExceptionId
     { "Division Error (#DE)",                       EXCEPTION_DE        }, // 0
     { "Debug (#DB)",                                EXCEPTION_DB        }, // 1
@@ -53,7 +52,24 @@ static EXCEPTION_INFO gExceptionInfo[IDT_INIT_DESCRIPTORS] = {
     { "Security Exception (#SX)",                   EXCEPTION_SX        }, // 30
     { "Reserved",                                   EXCEPTION_RES9      }, // 31
     { "Reserved",                                   INTERRUPT_TIMER     }, // 32
-    { "Reserved",                                   INTERRUPT_KB        }  // 33
+    { "Reserved",                                   INTERRUPT_KB        }, // 33
+    { "Reserved",                                   USER_DEFINED_START  }, // 34
+    { "Reserved",                                   USER_DEFINED_START  }, // 35
+    { "Reserved",                                   USER_DEFINED_START  }, // 36
+    { "Reserved",                                   USER_DEFINED_START  }, // 37
+    { "Reserved",                                   USER_DEFINED_START  }, // 38
+    { "Reserved",                                   INTERRUPT_SP_IRQ7   }, // 39
+    { "Reserved",                                   USER_DEFINED_START  }, // 40
+    { "Reserved",                                   USER_DEFINED_START  }, // 41
+    { "Reserved",                                   USER_DEFINED_START  }, // 42
+    { "Reserved",                                   USER_DEFINED_START  }, // 43
+    { "Reserved",                                   USER_DEFINED_START  }, // 44
+    { "Reserved",                                   USER_DEFINED_START  }, // 45
+    { "Reserved",                                   USER_DEFINED_START  }, // 46
+    { "Reserved",                                   INTERRUPT_SP_IRQ15  }, // 47
+    { "Reserved",                                   USER_DEFINED_START  }, // 48
+    { "Reserved",                                   USER_DEFINED_START  }, // 49
+    { "Reserved",                                   USER_DEFINED_START  }, // 50
 };
 
 static
@@ -64,11 +80,6 @@ PrintTrapInfo(
     DWORD        ErrorCode
 )
 {
-    if (InterruptIdx >= 32)
-    {
-        return;
-    }
-
     EXCEPTION_INFO exceptionInfo = gExceptionInfo[InterruptIdx];
 
     LogMessage("Trap information:\r\n");
@@ -212,7 +223,7 @@ HandleInterrupt(
 {
     *InterruptHandled = 0;
 
-    if (InterruptIdx <= 31)
+    if (InterruptIdx < 32)
     {
         PrintTrapInfo(Context, InterruptIdx, (DWORD)ErrorCode);
         PrintRegisters(Context);
@@ -265,6 +276,18 @@ __kb_finally:
         PIC_sendEOI(1);
         break;
     }
+    //
+    // https://www.reddit.com/r/osdev/comments/5qqnkq/are_spurious_interrupts_irq_7_a_bad_sign_and_how/
+    //
+    case INTERRUPT_SP_IRQ7:
+    {
+        break;
+    }
+    case INTERRUPT_SP_IRQ15:
+    {
+        PIC_sendEOI(7);
+        break;
+    }
     default:
     {
         return;
@@ -299,7 +322,7 @@ InitInterrupts()
     gIDTR.Limit = (sizeof(IDT_ENTRY) * IDT_MAX_DESCRIPTORS) - 1;
     gIDTR.Base = (QWORD)&gIDT[0] | TERABYTE;
 
-    for (WORD idx = 0; idx < IDT_INIT_DESCRIPTORS; ++idx)
+    for (WORD idx = 0; idx < IDT_MAX_DESCRIPTORS; ++idx)
     {
         QWORD handler = (QWORD)gISR_stub_table[idx] | TERABYTE;
 

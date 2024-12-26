@@ -15,6 +15,8 @@ InitLogging()
     __outbyte(0x3FA, 0xC7); io_wait();
 
     __outbyte(0x3FC, 0x03); io_wait();
+
+    LogMessage("Logging initialized!\r\n\r\n");
 }
 
 int

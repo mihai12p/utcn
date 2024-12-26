@@ -122,3 +122,22 @@ memnset(
         *d++ = Value;
     }
 }
+
+_Use_decl_annotations_
+char*
+strchr(
+    _In_ const char* String,
+    _In_ char        Character
+)
+{
+    while (*String != '\0')
+    {
+        if (*String == Character)
+        {
+            return (char*)String;
+        }
+        ++String;
+    }
+
+    return (Character == '\0') ? (char*)String : NULL;
+}

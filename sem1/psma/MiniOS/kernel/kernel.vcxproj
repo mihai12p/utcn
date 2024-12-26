@@ -51,6 +51,7 @@
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)..\bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\symbols\$(Platform)\$(ProjectName)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -113,7 +114,8 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies />
+      <AdditionalDependencies>
+      </AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <MergeSections>
       </MergeSections>
@@ -134,34 +136,43 @@
     </PostBuildEvent>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ATA.c" />
     <ClCompile Include="CLI.c" />
     <ClCompile Include="Edit.c" />
+    <ClCompile Include="Heap.c" />
     <ClCompile Include="Interrupts.c" />
     <ClCompile Include="Keyboard.c" />
     <ClCompile Include="logging.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="TestMemory.c" />
+    <ClCompile Include="Physical.c" />
     <ClCompile Include="PIC.c" />
     <ClCompile Include="RTC.c" />
     <ClCompile Include="screen.c" />
     <ClCompile Include="String.c" />
+    <ClCompile Include="Virtual.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATA.h" />
     <ClInclude Include="CLI.h" />
     <ClInclude Include="Edit.h" />
+    <ClInclude Include="Heap.h" />
     <ClInclude Include="Interrupts.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="TestMemory.h" />
+    <ClInclude Include="Physical.h" />
     <ClInclude Include="PIC.h" />
     <ClInclude Include="RTC.h" />
     <ClInclude Include="Scancode.h" />
     <ClInclude Include="screen.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="Virtual.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="__init.asm">

@@ -2,7 +2,7 @@
 %include "Utils.inc"
 
 IMPORTFROMC KernelMain, InterruptHandler
-EXPORT2C ASMEntryPoint, __magic, gISR_stub_table
+EXPORT2C ASMEntryPoint, __magic, gISR_stub_table, PML4
 
 segment .text
 
@@ -109,6 +109,11 @@ ASMEntryPoint:
     ISR_NOERRCODE 31
     ISR_NOERRCODE 32    ; Timer
     ISR_NOERRCODE 33    ; Keyboard
+%assign i 34
+%rep    222
+    ISR_NOERRCODE i
+    %assign i i+1
+%endrep
 __isr_common_stub:
 ; Stack:
 ;     [rsp + 30h]     SS
@@ -280,7 +285,7 @@ _page_map_level_4:
 
 gISR_stub_table:
 %assign i 0
-%rep    34
+%rep    256
     dq isr_stub_%+i
     %assign i i+1
 %endrep

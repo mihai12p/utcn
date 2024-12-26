@@ -7,11 +7,9 @@
 VOID
 KernelMain()
 {
-    InitScreen();
-
     InitLogging();
 
-    LogMessage("Logging initialized!\r\n\r\n");
+    InitScreen();
 
     InitInterrupts();
 
@@ -20,8 +18,4 @@ KernelMain()
     while (1);
 
     __debugbreak();
-
-    // TODO!!! read disk sectors using PIO mode ATA
-
-    // TODO!!! Memory management: virtual, physical and heap memory allocators
 }
