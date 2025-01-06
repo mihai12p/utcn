@@ -1,0 +1,107 @@
+1. Vulnerability Analysis of get_language_php (student_delivery.php)
+    The function is vulnerable to path traversal as it concatenates user input ($language) directly into the file path without sanitization.
+    An attacker can exploit ../ sequences to traverse directories or use null bytes (%00) to bypass the .php extension requirement.
+    The returned path is directly included via include_once() in index.php, creating a local file inclusion vulnerability.
+    This allows attackers to read sensitive files or execute arbitrary PHP code if they can write to any accessible directory.
+
+2. Weak Database Security (dbconfig.php, line 4)
+    The database connection is configured with an empty password, leaving it vulnerable to unauthorized access.
+    A strong, complex password must be enforced to secure the database.
+
+3. Sensitive Error Disclosure (dbconfig.php, line 12)
+    Connection errors are directly reported to the user. This can inadvertently reveal sensitive details about the system. Error messages should be generic for users while detailed logs are reserved for administrators.
+
+4. Reflected XSS (index.php, line 21, 44, 51, 64, 75, 80)
+    User inputs ($_GET["language"], $_FILES["photo"]["name"], $_FILES["memo"]["name"], $_SESSION["cookie"]) are rendered in the browser without sanitization, allowing attackers to execute malicious scripts.
+
+5. Stored XSS (index.php, line 141-142)
+    User inputs, such as messages, are stored on the server and displayed later without sanitization. This can lead to the execution of malicious scripts when the data is rendered in the browser.
+
+6. Unvalidated File Uploads Leading to RCE (index.php, lines 48-51)
+    Uploaded memos are not validated, allowing attackers to upload executable files (e.g., PHP scripts). If these files are placed in a web-accessible directory, they can be executed remotely, compromising the server.
+
+7. Predictable Cookie Values
+    Session cookies are based solely on the username, making them guessable or brute-forceable.
+    Cookies should be generated using a secure, non-deterministic algorithm to enhance security.
+    Additionally, session fixation attacks are possible, and there is no session timeout mechanism.
+
+8. Lack of Defensive Programming in Utility Functions
+    Utility functions lack robust input validation and sanitization, making the application vulnerable.
+    These functions should be treated as independent black-box components and designed to handle invalid or malicious inputs securely.
+
+9. CSRF Vulnerability
+    Forms lack CSRF protection, making the application susceptible to cross-site request forgery.
+    Malicious third-party sites could trick authenticated users into performing unintended actions, such as posting messages or uploading files.
+
+10. Login System vulnerabilities
+    Passwords are stored using MD5, a broken cryptographic hash algorithm unsuitable for secure storage.
+    Brute-force protection and rate limiting are also absent, making the system vulnerable to automated attacks.
+
+11. Message System vulnerabilities
+    No rate limiting is enforced for message posting, allowing potential abuse or spam.
+
+12. DOS Vulnerability
+    There is no restriction on the number of files a user can upload or their sizes.
+    This could lead to disk space exhaustion, resulting in a denial of service for the application.
+
+13. Empty .htaccess File
+    The .htaccess file (in utils folder) is empty which means there is no protection for sensitive directories from unauthorized access or execution.
+    Also, there are no rules to prevent bots or malicious crawlers from accessing the site, increasing the risk of automated attacks like brute force or scraping.
+
+14. query_db_login()
+    What vulnerabilities can there be in this function?
+        - SQL injection
+    What specific mitigation did you use for this vulnerability?
+        - Prepared statements
+
+15. get_message_rows()
+    What vulnerabilities can there be in this function?
+        - Stored XSS
+    What specific mitigation did you use for this vulnerability?
+        - HTML special characters encoding (htmlspecialchars)
+
+16. add_message_for_user()
+    What vulnerabilities can there be in this function?
+        - Stored XSS
+        - SQL injection
+    What specific mitigation did you use for this vulnerability?
+        - HTML special characters encoding (htmlspecialchars)
+        - Message length limitation (256 characters)
+        - Prepared statements
+
+17. is_valid_image()
+    What vulnerabilities can there be in this function?
+        - Unverified file type (uploading non-image files)
+    What specific mitigation did you use for this vulnerability?
+        - File type validation using finfo_file() and whitelisted MIME types (image/jpeg, image/png, image/gif)
+
+18. add_photo_path_to_user()
+    What vulnerabilities can there be in this function?
+        - Path traversal
+        - SQL injection
+    What specific mitigation did you use for this vulnerability?
+        - Sanitization of the input file path using htmlspecialchars()
+        - Validating file paths with realpath()
+        - Prepared statements
+
+19. get_photo_path_for_user()
+    What vulnerabilities can there be in this function?
+        - SQL injection
+    What specific mitigation did you use for this vulnerability?
+        - Prepared statements
+
+20. get_memo_content_for_user()
+    What vulnerabilities can there be in this function?
+        - Stored XSS
+        - Path traversal
+    What specific mitigation did you use for this vulnerability?
+        - Sanitization of the input file path using htmlspecialchars()
+        - Validating file paths with realpath()
+
+21. get_language_php()
+    What vulnerabilities can there be in this function?
+        - Path traversal
+        - File inclusion
+    What specific mitigation did you use for this vulnerability?
+        - Validating file paths with realpath()
+        - Allowed languages validation (whitelisted only en and ro)
