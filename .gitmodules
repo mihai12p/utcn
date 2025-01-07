@@ -1,0 +1,3 @@
+[submodule "sem1/psma/MiniOS/extern/acpica"]
+	path = sem1/psma/MiniOS/extern/acpica
+	url = git@github.com:acpica/acpica.git

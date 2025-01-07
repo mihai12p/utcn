@@ -229,6 +229,10 @@ _page_directory:
         dq PT2 + (BIT_PRESENT | BIT_READ_WRITE)
         dq PT3 + (BIT_PRESENT | BIT_READ_WRITE)
         dq PT4 + (BIT_PRESENT | BIT_READ_WRITE)
+        dq PT4 + (BIT_PRESENT | BIT_READ_WRITE)
+        dq PT4 + (BIT_PRESENT | BIT_READ_WRITE)
+        dq PT4 + (BIT_PRESENT | BIT_READ_WRITE)
+        dq PT4 + (BIT_PRESENT | BIT_READ_WRITE)
         times 512 - ($ - PD0) / 8 dq 0
 
     align PAGE_SIZE

@@ -37,6 +37,22 @@ FLAT_DESCRIPTOR_CODE16      equ 0x00009B000000FFFF  ; Code: Execute/Read, access
 FLAT_DESCRIPTOR_DATA16      equ 0x000093000000FFFF  ; Data: Read/Write, accessed
 
 ;
+; https://coconucos.cs.uni-duesseldorf.de/lehre/abschlussarbeiten/BA-Urlacher-23.pdf
+;
+LAPIC_BASE                  equ (0x1000000)
+AP_STARTUP_CODE_ADDRESS     equ (0x2000)
+LAPIC_ID_REGISTER           equ (0x20)
+LAPIC_VERSION_REGISTER      equ (0x30)
+LAPIC_EOI_REGISTER          equ (0xB0)
+LAPIC_SVR_OFFSET            equ (0xF0)             ; Spurious Interrupt Vector Register offset
+LAPIC_ESR_OFFSET            equ (0x280)            ; Error Status Register offset
+LAPIC_ICR_LOW_OFFSET        equ (0x300)            ; ICR low register offset
+LAPIC_ICR_HIGH_OFFSET       equ (0x310)            ; ICR high register offset
+APIC_ENABLED                equ (0x100)            ; APIC Enable bit (bit 8)
+INIT_DELIVERY               equ (0x500)            ; INIT delivery mode
+SIPI_DELIVERY               equ (0x600)            ; Startup IPI delivery mode
+
+;
 ; MACROS
 ;
 %macro IMPORTFROMC 1-*

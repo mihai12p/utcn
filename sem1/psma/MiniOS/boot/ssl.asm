@@ -92,8 +92,8 @@ SSL:
     pop  ecx                               ; restore ecx
     loop .copy_next_cylinder
     
-    mov  [ds:0xb8000],  byte 'O'
-    mov  [ds:0xb8002],  byte 'K'
+    mov  [ds:0xB8000],  byte 'O'
+    mov  [ds:0xB8002],  byte 'K'
 
 is_A20_on?:
     pushad

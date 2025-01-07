@@ -198,7 +198,6 @@ MapPage(
     }
 
     PQWORD pdpt = (PQWORD)(pml4[pml4Idx] & PAGE_MASK);
-
     if (!(pdpt[pdptIdx] & BIT_PRESENT))
     {
         QWORD physicalAddr = AllocPageTable();
@@ -211,7 +210,6 @@ MapPage(
     }
 
     PQWORD pd = (PQWORD)(pdpt[pdptIdx] & PAGE_MASK);
-
     if (!(pd[pdIdx] & BIT_PRESENT))
     {
         QWORD physicalAddr = AllocPageTable();

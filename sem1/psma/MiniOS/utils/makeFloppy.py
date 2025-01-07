@@ -38,7 +38,7 @@ size = out.tell()
 #print "Adding padding from %d to %d ...\n"%(size, flpSize)
 for i in range(0, (flpSize - size)):
     sector = (i // 512 + 1) % 255
-    out.write(struct.pack("=B", sector))
+    out.write(b'\0')
 
 #cleanup
 out.close()

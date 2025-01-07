@@ -72,6 +72,9 @@
     <ClCompile Include="TestMemory.c">
       <Filter>Source Files\Test</Filter>
     </ClCompile>
+    <ClCompile Include="APIC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="screen.h">
@@ -122,9 +125,18 @@
     <ClInclude Include="TestMemory.h">
       <Filter>Header Files\Test</Filter>
     </ClInclude>
+    <ClInclude Include="APIC.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="__init.asm">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="__procedures.asm">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="__ap_startup.asm">
       <Filter>Source Files</Filter>
     </CustomBuild>
   </ItemGroup>
