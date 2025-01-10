@@ -6,12 +6,13 @@
 #include "ATA.h"
 #include "logging.h"
 #include "TestMemory.h"
+#include "TestSynchronization.h"
 
 #define CLI_COMMAND_BUFFER_SIZE     (2048)
 #define MAX_COMMAND_ARGUMENT_SIZE   (64)
 #define MAX_COMMAND_COUNT           (10)
 #define MAX_COMMAND_HISTORY_COUNT   (10)
-#define MAX_COMMAND_NAME_CHARACTERS (15)
+#define MAX_COMMAND_NAME_CHARACTERS (20)
 
 typedef struct _CLI_BUFFER
 {
@@ -282,6 +283,11 @@ CLI_CommandTestRun(
     _In_opt_ const char* Arguments
 )
 {
+    if (!Arguments)
+    {
+        return;
+    }
+
     CLI_ExecuteCommand(&gTestcases, Arguments);
 }
 
@@ -306,7 +312,7 @@ CLI_CommandTestRunAll(
 {
     for (int i = 0; i < gTestcases.CommandCount; ++i)
     {
-        CLI_ExecuteCommand(&gTestcases, gTestcases.Command[i].Name);
+        CLI_CommandTestRun(gTestcases.Command[i].Name);
     }
 }
 
@@ -328,8 +334,10 @@ CLI_Init()
     //
     // Testcases
     //
-    CLI_RegisterCommand(&gTestcases, "page",        TestcasePage);
-    CLI_RegisterCommand(&gTestcases, "heap",        TestcaseHeap);
+    CLI_RegisterCommand(&gTestcases, "page",                TestcasePage);
+    CLI_RegisterCommand(&gTestcases, "heap",                TestcaseHeap);
+    CLI_RegisterCommand(&gTestcases, "synchronized_print",  TestcaseSynchronizedPrint);
+    CLI_RegisterCommand(&gTestcases, "linked_list",         TestcaseLinkedList);
 }
 
 VOID

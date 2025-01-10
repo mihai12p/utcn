@@ -1,5 +1,6 @@
 #include "Physical.h"
 #include "String.h"
+#include "Spinlock.h"
 
 #define FRAME_SIZE              PAGE_SIZE
 #define MAX_AVAILABLE_ADDRESS   (0x1FFF0000)
@@ -9,18 +10,28 @@
 #define MAX_FRAME_COUNT         (MAX_AVAILABLE_ADDRESS / FRAME_SIZE)
 #define BITMAP_SIZE             ((MAX_FRAME_COUNT + 7) / 8)
 
-BYTE gFrameBitmap[BITMAP_SIZE] = { 0 };
+typedef struct _FRAME_MANAGER
+{
+    BYTE     FrameBitmap[BITMAP_SIZE];
+    SPINLOCK Lock;
+} FRAME_MANAGER;
+
+static FRAME_MANAGER gFrameManager = { 0 };
 
 extern QWORD PML4[];
 
+_Requires_exclusive_lock_held_(gFrameManager.Lock)
+static
 VOID
 MarkFrameInUse(
     _In_ QWORD FrameIdx
 )
 {
-    SET_BIT(gFrameBitmap, FrameIdx);
+    SET_BIT(gFrameManager.FrameBitmap, FrameIdx);
 }
 
+_Requires_exclusive_lock_held_(gFrameManager.Lock)
+static
 VOID
 InitFrameBitmap()
 {
@@ -30,12 +41,14 @@ InitFrameBitmap()
     }
 }
 
+_Requires_exclusive_lock_held_(gFrameManager.Lock)
+static
 VOID
 MarkFrameFree(
     _In_ QWORD FrameIdx
 )
 {
-    CLEAR_BIT(gFrameBitmap, FrameIdx);
+    CLEAR_BIT(gFrameManager.FrameBitmap, FrameIdx);
 }
 
 _Use_decl_annotations_
@@ -45,9 +58,17 @@ FrameAlloc(
     _In_  DWORD  FrameCount
 )
 {
+    *FrameIdx = 0;
+
+    int spinlockStatus = SpinlockAcquire(&gFrameManager.Lock);
+    if (spinlockStatus < 0)
+    {
+        return 0;
+    }
+
     for (QWORD i = RESERVED_FRAME_COUNT; i < MAX_FRAME_COUNT; ++i)
     {
-        if (IS_BIT_SET(gFrameBitmap, i))
+        if (IS_BIT_SET(gFrameManager.FrameBitmap, i))
         {
             //
             // The frame is in use
@@ -58,7 +79,7 @@ FrameAlloc(
         int areContiguousFramesFree = 1;
         for (DWORD j = 0; j < FrameCount; ++j)
         {
-            if (i + j >= MAX_FRAME_COUNT || IS_BIT_SET(gFrameBitmap, i + j))
+            if (i + j >= MAX_FRAME_COUNT || IS_BIT_SET(gFrameManager.FrameBitmap, i + j))
             {
                 areContiguousFramesFree = 0;
                 break;
@@ -72,10 +93,13 @@ FrameAlloc(
             {
                 MarkFrameInUse(i + j);
             }
+
+            SpinlockRelease(&gFrameManager.Lock, spinlockStatus);
             return 1;
         }
     }
 
+    SpinlockRelease(&gFrameManager.Lock, spinlockStatus);
     return 0;
 }
 
@@ -85,37 +109,18 @@ FrameFree(
     _In_ DWORD FrameCount
 )
 {
+    int spinlockStatus = SpinlockAcquire(&gFrameManager.Lock);
+    if (spinlockStatus < 0)
+    {
+        return;
+    }
+
     for (DWORD i = 0; i < FrameCount; ++i)
     {
         MarkFrameFree(FrameIdx + i);
     }
-}
 
-int
-AreFramesFree(
-    _In_ QWORD FrameIdx,
-    _In_ DWORD FrameCount
-)
-{
-    if (FrameIdx + FrameCount > MAX_FRAME_COUNT)
-    {
-        return 0;
-    }
-
-    for (DWORD i = 0; i < FrameCount; ++i)
-    {
-        if (!IS_BIT_SET(gFrameBitmap, FrameIdx + i))
-        {
-            continue;
-        }
-
-        //
-        // At least one frame is in use.
-        //
-        return 0;
-    }
-
-    return 1;
+    SpinlockRelease(&gFrameManager.Lock, spinlockStatus);
 }
 
 static inline QWORD PML4Idx(_In_ QWORD Address) { return (Address >> 39) & 0x1FF; }

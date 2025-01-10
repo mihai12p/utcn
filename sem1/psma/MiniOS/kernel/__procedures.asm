@@ -1,7 +1,7 @@
 
 %include "Utils.inc"
 
-EXPORT2C EnableLAPIC, SendStartupIPI
+EXPORT2C EnableLAPIC, SendStartupIPI, SendIPI, WriteLAPICRegister, GetRFlags, SetRFlags
 
 segment .text
 
@@ -50,7 +50,6 @@ SendStartupIPI:
     mov     [esi],  eax
 
     call    __wait_for_delivery
-    call    __delay
 
     mov     esi,    LAPIC_BASE + LAPIC_ESR_OFFSET
     mov     eax,    0
@@ -68,7 +67,6 @@ SendStartupIPI:
     mov     eax,    SIPI_DELIVERY | (AP_STARTUP_CODE_ADDRESS / PAGE_SIZE)
     mov     [esi],  eax
 
-    call    __short_delay
     call    __wait_for_delivery
 
     ;
@@ -83,7 +81,6 @@ SendStartupIPI:
     mov     eax,    SIPI_DELIVERY | (AP_STARTUP_CODE_ADDRESS / PAGE_SIZE)
     mov     [esi],  eax
 
-    call    __short_delay
     call    __wait_for_delivery
 
     pop     rbx
@@ -97,18 +94,30 @@ __wait_for_delivery:
     jnz     .check
     ret
 
-__delay:                                     ; 10ms delay
-    mov     rcx,    1000000
-.loop:
-    dec     ecx
-    test    ecx,    ecx
-    jnz     .loop
+WriteLAPICRegister:
+    mov     eax,    LAPIC_BASE
+    add     eax,    ecx
+    mov     [eax],  edx
     ret
 
-__short_delay:                               ; 200µs delay
-    mov     rcx,    20000
-.loop:
-    dec     ecx
-    test    ecx,    ecx
-    jnz     .loop
+SendIPI:
+    shl     ecx,    24
+    mov     eax,    LAPIC_BASE + LAPIC_ICR_HIGH_OFFSET
+    mov     [eax],  ecx
+
+    or      edx,    0xC000
+    mov     eax,    LAPIC_BASE + LAPIC_ICR_LOW_OFFSET
+    mov     [eax],  edx
+
+    call    __wait_for_delivery
+    ret
+
+GetRFlags:
+    pushfq
+    pop     rax
+    ret
+
+SetRFlags:
+    push    rcx
+    popfq
     ret

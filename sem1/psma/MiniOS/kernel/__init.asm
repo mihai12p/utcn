@@ -64,10 +64,7 @@ ASMEntryPoint:
 
     call __invalidate_TLB
 
-    mov  rax,   1
-    shl  rax,   40
-    add  rsp,   rax
-    add  rax,   KernelMain
+    mov  rax,   KernelMain
     call rax
 
     break
@@ -110,7 +107,14 @@ ASMEntryPoint:
     ISR_NOERRCODE 32    ; Timer
     ISR_NOERRCODE 33    ; Keyboard
 %assign i 34
-%rep    222
+%rep    46
+    ISR_NOERRCODE i
+    %assign i i+1
+%endrep
+    ISR_NOERRCODE 80    ; IPI_T1
+    ISR_NOERRCODE 81    ; IPI_T2
+%assign i 82
+%rep    174
     ISR_NOERRCODE i
     %assign i i+1
 %endrep

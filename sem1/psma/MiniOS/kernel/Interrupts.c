@@ -4,10 +4,12 @@
 #include "Keyboard.h"
 #include "CLI.h"
 #include "screen.h"
+#include "TestSynchronization.h"
 
 #define IDT_MAX_DESCRIPTORS    (256)
 
 extern PVOID gISR_stub_table[];
+extern VOID WriteLAPICRegister(_In_ DWORD LAPICRegister, _In_ DWORD Value);
 
 _Alignas(16) static IDT_ENTRY gIDT[IDT_MAX_DESCRIPTORS] = { 0 };
 static IDT_PTR                gIDTR = { 0 };
@@ -70,6 +72,37 @@ static EXCEPTION_INFO gExceptionInfo[IDT_MAX_DESCRIPTORS] = {
     { "Reserved",                                   USER_DEFINED_START  }, // 48
     { "Reserved",                                   USER_DEFINED_START  }, // 49
     { "Reserved",                                   USER_DEFINED_START  }, // 50
+    { "Reserved",                                   USER_DEFINED_START  }, // 51
+    { "Reserved",                                   USER_DEFINED_START  }, // 52
+    { "Reserved",                                   USER_DEFINED_START  }, // 53
+    { "Reserved",                                   USER_DEFINED_START  }, // 54
+    { "Reserved",                                   USER_DEFINED_START  }, // 55
+    { "Reserved",                                   USER_DEFINED_START  }, // 56
+    { "Reserved",                                   USER_DEFINED_START  }, // 57
+    { "Reserved",                                   USER_DEFINED_START  }, // 58
+    { "Reserved",                                   USER_DEFINED_START  }, // 59
+    { "Reserved",                                   USER_DEFINED_START  }, // 60
+    { "Reserved",                                   USER_DEFINED_START  }, // 61
+    { "Reserved",                                   USER_DEFINED_START  }, // 62
+    { "Reserved",                                   USER_DEFINED_START  }, // 63
+    { "Reserved",                                   USER_DEFINED_START  }, // 64
+    { "Reserved",                                   USER_DEFINED_START  }, // 65
+    { "Reserved",                                   USER_DEFINED_START  }, // 66
+    { "Reserved",                                   USER_DEFINED_START  }, // 67
+    { "Reserved",                                   USER_DEFINED_START  }, // 68
+    { "Reserved",                                   USER_DEFINED_START  }, // 69
+    { "Reserved",                                   USER_DEFINED_START  }, // 70
+    { "Reserved",                                   USER_DEFINED_START  }, // 71
+    { "Reserved",                                   USER_DEFINED_START  }, // 72
+    { "Reserved",                                   USER_DEFINED_START  }, // 73
+    { "Reserved",                                   USER_DEFINED_START  }, // 74
+    { "Reserved",                                   USER_DEFINED_START  }, // 75
+    { "Reserved",                                   USER_DEFINED_START  }, // 76
+    { "Reserved",                                   USER_DEFINED_START  }, // 77
+    { "Reserved",                                   USER_DEFINED_START  }, // 78
+    { "Reserved",                                   USER_DEFINED_START  }, // 79
+    { "Synchronized Print Testcase IPI",            INTERRUPT_IPI_T1    }, // 80
+    { "Synchronized Linked List Testcase IPI",      INTERRUPT_IPI_T2    }, // 81
 };
 
 static
@@ -288,6 +321,20 @@ __kb_finally:
         PIC_sendEOI(7);
         break;
     }
+    case INTERRUPT_IPI_T1:
+    {
+        APTestcaseSynchronizedPrint();
+
+        WriteLAPICRegister(LAPIC_EOI_REGISTER, 0);
+        break;
+    }
+    case INTERRUPT_IPI_T2:
+    {
+        APTestcaseLinkedList();
+
+        WriteLAPICRegister(LAPIC_EOI_REGISTER, 0);
+        break;
+    }
     default:
     {
         return;
@@ -317,14 +364,14 @@ InterruptHandler(
 }
 
 VOID
-InitInterrupts()
+BspInitInterrupts()
 {
     gIDTR.Limit = (sizeof(IDT_ENTRY) * IDT_MAX_DESCRIPTORS) - 1;
-    gIDTR.Base = (QWORD)&gIDT[0] | TERABYTE;
+    gIDTR.Base = (QWORD)&gIDT[0];
 
     for (WORD idx = 0; idx < IDT_MAX_DESCRIPTORS; ++idx)
     {
-        QWORD handler = (QWORD)gISR_stub_table[idx] | TERABYTE;
+        QWORD handler = (QWORD)gISR_stub_table[idx];
 
         gIDT[idx].OffsetLow = OFFSET_LOW(handler);
         gIDT[idx].SegmentSelector = 0x08;
@@ -362,6 +409,14 @@ InitInterrupts()
 
     IRQ_clear_mask(0); // Timer
     IRQ_clear_mask(1); // Keyboard
+
+    _enable();
+}
+
+VOID
+ApInitInterrupts()
+{
+    __lidt(&gIDTR);
 
     _enable();
 }

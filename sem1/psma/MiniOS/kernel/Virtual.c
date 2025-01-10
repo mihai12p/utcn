@@ -1,20 +1,29 @@
 #include "Virtual.h"
 #include "Physical.h"
 #include "String.h"
+#include "Spinlock.h"
 
-#define AVAILABLE_MEMORY_START      (0x1000000)
+#define AVAILABLE_MEMORY_START      (0x1200000)
 #define AVAILABLE_MEMORY_END        (0x10000000)
 
-QWORD gVMManager[0x20000] = { 0 };
+typedef struct _VM_MANAGER
+{
+    QWORD    PageMap[0x20000];
+    SPINLOCK Lock;
+} VM_MANAGER;
+
+static VM_MANAGER gVMManager = { 0 };
 
 _Must_inspect_result_
+_Requires_exclusive_lock_held_(gVMManager.Lock)
+static
 int
 IsPageMapped(
     _In_ PVOID Page
 )
 {
     QWORD pageIdx = (QWORD)Page / PAGE_SIZE;
-    return (gVMManager[pageIdx] & BIT_PRESENT) != 0;
+    return (gVMManager.PageMap[pageIdx] & BIT_PRESENT) == BIT_PRESENT;
 }
 
 _Use_decl_annotations_
@@ -25,7 +34,18 @@ PageAlloc(
     _In_        QWORD  FrameAddr
 )
 {
-    if (Page && *Page == NULL)
+    if (!Page)
+    {
+        return 0;
+    }
+
+    int spinlockStatus = SpinlockAcquire(&gVMManager.Lock);
+    if (spinlockStatus < 0)
+    {
+        return 0;
+    }
+
+    if (*Page == NULL)
     {
         for (QWORD address = AVAILABLE_MEMORY_START; address < AVAILABLE_MEMORY_END; address += PAGE_SIZE)
         {
@@ -54,6 +74,7 @@ PageAlloc(
             //
             // No free pages found.
             //
+            SpinlockRelease(&gVMManager.Lock, spinlockStatus);
             return 0;
         }
     }
@@ -64,6 +85,7 @@ PageAlloc(
         int status = FrameAlloc(&frameIdx, PageCount);
         if (!status)
         {
+            SpinlockRelease(&gVMManager.Lock, spinlockStatus);
             return 0;
         }
 
@@ -71,7 +93,7 @@ PageAlloc(
         {
             QWORD physicalAddr = (frameIdx + i) * PAGE_SIZE;
             QWORD pageIdx = ((QWORD)*Page + (i * PAGE_SIZE)) / PAGE_SIZE;
-            gVMManager[pageIdx] = physicalAddr | BIT_PRESENT | BIT_READ_WRITE;
+            gVMManager.PageMap[pageIdx] = physicalAddr | BIT_PRESENT | BIT_READ_WRITE;
 
             (VOID)MapPage(physicalAddr, pageIdx * PAGE_SIZE, BIT_PRESENT | BIT_READ_WRITE);
         }
@@ -81,12 +103,13 @@ PageAlloc(
         for (DWORD i = 0; i < PageCount; ++i)
         {
             QWORD pageIdx = ((QWORD)*Page + (i * PAGE_SIZE)) / PAGE_SIZE;
-            gVMManager[pageIdx] = (FrameAddr + (i * PAGE_SIZE)) | BIT_PRESENT | BIT_READ_WRITE;
+            gVMManager.PageMap[pageIdx] = (FrameAddr + (i * PAGE_SIZE)) | BIT_PRESENT | BIT_READ_WRITE;
 
             (VOID)MapPage(FrameAddr + (i * PAGE_SIZE), pageIdx * PAGE_SIZE, BIT_PRESENT | BIT_READ_WRITE);
         }
     }
 
+    SpinlockRelease(&gVMManager.Lock, spinlockStatus);
     return 1;
 }
 
@@ -97,17 +120,25 @@ PageFree(
     _In_ int   FreeBacking
 )
 {
+    int spinlockStatus = SpinlockAcquire(&gVMManager.Lock);
+    if (spinlockStatus < 0)
+    {
+        return;
+    }
+
     QWORD pageIdx = (QWORD)PageAddr / PAGE_SIZE;
     for (DWORD i = 0; i < PageCount; ++i)
     {
-        if (FreeBacking && (gVMManager[pageIdx + i] & BIT_PRESENT))
+        if (FreeBacking && (gVMManager.PageMap[pageIdx + i] & BIT_PRESENT))
         {
-            QWORD frameAddr = gVMManager[pageIdx + i] & PAGE_MASK;
-            FrameFree(frameAddr, 1);
+            QWORD frameAddr = gVMManager.PageMap[pageIdx + i] & PAGE_MASK;
+            FrameFree(frameAddr / PAGE_SIZE, 1);
         }
 
-        gVMManager[pageIdx + i] = 0;
+        gVMManager.PageMap[pageIdx + i] = 0;
 
         (VOID)MapPage(0, (QWORD)PageAddr + (i * PAGE_SIZE), 0);
     }
+
+    SpinlockRelease(&gVMManager.Lock, spinlockStatus);
 }

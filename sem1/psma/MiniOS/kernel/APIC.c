@@ -47,11 +47,7 @@ typedef struct _MP_PROCESSOR_ENTRY
 } MP_PROCESSOR_ENTRY;
 #pragma pack(pop)
 
-typedef struct _LAPIC_INFO
-{
-    BYTE LapicIds[32];
-    BYTE LapicIdsCount;
-} LAPIC_INFO, * PLAPIC_INFO;
+LAPIC_INFO gLAPICInfo = { 0 };
 
 extern VOID EnableLAPIC();
 extern VOID SendStartupIPI(_In_ DWORD LAPICId);
@@ -230,6 +226,9 @@ InitMP()
         mpFloatingPointerAddress = (QWORD)FindMPFloatingPointerStructure(fallbackEbdaAddress, fallbackEbdaAddress + 1024);
     }
 
+    //
+    // Search in the whole mapped memory
+    //
     if (!mpFloatingPointerAddress)
     {
         mpFloatingPointerAddress = (QWORD)FindMPFloatingPointerStructure(0, 0xA00000);
@@ -243,9 +242,8 @@ InitMP()
 
     LogMessage("MP Floating Pointer Structure found at "); LogQword(mpFloatingPointerAddress); LogMessage("\n");
 
-    LAPIC_INFO lapicInfo = { 0 };
     PMP_FLOATING_POINTER mpFloatingPointer = (PMP_FLOATING_POINTER)mpFloatingPointerAddress;
-    ParseMPConfigurationTable(&lapicInfo, mpFloatingPointer->MPConfigurationPointer);
+    ParseMPConfigurationTable(&gLAPICInfo, mpFloatingPointer->MPConfigurationPointer);
 
     int status = MapLAPIC();
     if (!status)
@@ -255,12 +253,16 @@ InitMP()
 
     PrepareAPStartupCode();
 
+    //
+    // Enable LAPIC on BSP.
+    //
     EnableLAPIC();
-    BYTE bspLapicId = GetBSPLAPICId();
-    for (BYTE i = 0; i < lapicInfo.LapicIdsCount; ++i)
+
+    gLAPICInfo.BSPLAPICId = GetBSPLAPICId();
+    for (BYTE i = 0; i < gLAPICInfo.LapicIdsCount; ++i)
     {
-        BYTE lapicId = lapicInfo.LapicIds[i];
-        if (lapicId == bspLapicId)
+        BYTE lapicId = gLAPICInfo.LapicIds[i];
+        if (lapicId == gLAPICInfo.BSPLAPICId)
         {
             continue;
         }
@@ -268,4 +270,30 @@ InitMP()
         LogMessage("Starting processor with LAPIC ID "); LogDword(lapicId); LogMessage("\n");
         SendStartupIPI(lapicId);
     }
+}
+
+VOID
+MarkAllCPUAvailable()
+{
+    for (BYTE i = 0; i < MAX_SUPPORTED_CPUS; ++i)
+    {
+        gLAPICInfo.IsReady[i] = 0;
+    }
+}
+
+VOID
+MarkCPUReady(
+    _In_ DWORD LAPICId
+)
+{
+    gLAPICInfo.IsReady[LAPICId] = 1;
+}
+
+_Use_decl_annotations_
+int
+IsCPUReady(
+    _In_ DWORD LAPICId
+)
+{
+    return gLAPICInfo.IsReady[LAPICId] == 1;
 }

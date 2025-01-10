@@ -1,5 +1,6 @@
 #include "logging.h"
 #include "PIC.h"
+#include "Spinlock.h"
 
 VOID
 InitLogging()
@@ -25,6 +26,29 @@ IsLineReady()
     return (__inbyte(0x3FD) & 0x60) == 0x60;
 }
 
+
+static SPINLOCK gMessageLock = { 0 };
+
+VOID
+LogMessage(
+    _In_ const char* Message
+)
+{
+    int status = SpinlockAcquire(&gMessageLock);
+    if (status < 0)
+    {
+        return;
+    }
+
+    for (int i = 0; Message[i]; ++i)
+    {
+        while (!IsLineReady()) {}
+        __outbyte(0x3F8, Message[i]); io_wait();
+    }
+
+    SpinlockRelease(&gMessageLock, status);
+}
+
 static
 VOID
 LogHex(
@@ -41,11 +65,7 @@ LogHex(
         Value >>= 4;
     }
 
-    for (int i = 0; buffer[i]; ++i)
-    {
-        while (!IsLineReady()) {}
-        __outbyte(0x3F8, buffer[i]); io_wait();
-    }
+    LogMessage(buffer);
 }
 
 VOID
@@ -78,16 +98,4 @@ LogQword(
 )
 {
     LogHex(Value, 16);
-}
-
-VOID
-LogMessage(
-    _In_ const char* Message
-)
-{
-    for (int i = 0; Message[i]; ++i)
-    {
-        while (!IsLineReady()) {}
-        __outbyte(0x3F8, Message[i]); io_wait();
-    }
 }

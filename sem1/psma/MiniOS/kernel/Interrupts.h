@@ -88,6 +88,8 @@ typedef enum _EXCEPTION_ID
     USER_DEFINED_START = 34,
     INTERRUPT_SP_IRQ7  = 39,
     INTERRUPT_SP_IRQ15 = 47,
+    INTERRUPT_IPI_T1   = 80,
+    INTERRUPT_IPI_T2   = 81,
     USER_DEFINED_END   = 255
 } EXCEPTION_ID;
 
@@ -107,6 +109,9 @@ InterruptHandler(
 );
 
 VOID
-InitInterrupts();
+BspInitInterrupts();
+
+VOID
+ApInitInterrupts();
 
 #endif//_INTERRUPTS_H_

@@ -15,6 +15,7 @@ typedef signed __int8           INT8;
 typedef signed __int16          INT16;
 typedef signed __int32          INT32;
 typedef signed __int64          INT64;
+typedef long                    LONG;
 typedef void                    VOID;
 typedef VOID*                   PVOID;
 
@@ -40,6 +41,9 @@ typedef VOID*                   PVOID;
 #define BIT_PRESENT             (BIT(0))
 #define BIT_READ_WRITE          (BIT(1))
 #define BIT_USER_SUPERVISOR     (BIT(2))
+
+#define LAPIC_EOI_REGISTER      (0xB0)
+#define RFLAGS_IF_BIT           (0x200)     // Interrupt Flag bit in RFLAGS
 
 //
 // MAGIC breakpoint into BOCHS (XCHG BX,BX)

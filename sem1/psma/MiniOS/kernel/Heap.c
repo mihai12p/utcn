@@ -21,12 +21,19 @@ HeapCreate(
         return 0;
     }
 
+    int spinlockStatus = SpinlockAcquire(&Heap->Lock);
+    if (spinlockStatus < 0)
+    {
+        return 0;
+    }
+
     DWORD alignedSize = (Size + PAGE_SIZE - 1) & PAGE_MASK;
     DWORD pageCount = alignedSize / PAGE_SIZE;
 
     int status = PageAlloc(&Base, pageCount, _UI64_MAX);
     if (!status)
     {
+        SpinlockRelease(&Heap->Lock, spinlockStatus);
         return 0;
     }
 
@@ -39,6 +46,8 @@ HeapCreate(
 
     Heap->FreeList.Flink = Heap->FreeList.Blink = &firstBlock->Entry;
     firstBlock->Entry.Flink = firstBlock->Entry.Blink = &Heap->FreeList;
+
+    SpinlockRelease(&Heap->Lock, spinlockStatus);
 
     return 1;
 }
@@ -53,6 +62,12 @@ HeapAlloc(
     if (!Heap || Size == 0)
     {
         return NULL;
+    }
+
+    int spinlockStatus = SpinlockAcquire(&Heap->Lock);
+    if (spinlockStatus < 0)
+    {
+        return 0;
     }
 
     PLIST_ENTRY current = Heap->FreeList.Flink;
@@ -77,12 +92,15 @@ HeapAlloc(
             }
 
             block->Free = 0;
+
+            SpinlockRelease(&Heap->Lock, spinlockStatus);
             return (PVOID)((PBYTE)block + sizeof(HEAP_HEADER));
         }
 
         current = current->Flink;
     }
 
+    SpinlockRelease(&Heap->Lock, spinlockStatus);
     return NULL;
 }
 
@@ -93,6 +111,12 @@ HeapFree(
 )
 {
     if (!Heap || !Address)
+    {
+        return;
+    }
+
+    int spinlockStatus = SpinlockAcquire(&Heap->Lock);
+    if (spinlockStatus < 0)
     {
         return;
     }
@@ -121,6 +145,8 @@ HeapFree(
         prevBlock->Entry.Flink = block->Entry.Flink;
         block->Entry.Flink->Blink = (PLIST_ENTRY)prevBlock;
     }
+
+    SpinlockRelease(&Heap->Lock, spinlockStatus);
 }
 
 VOID
@@ -133,8 +159,16 @@ HeapDestroy(
         return;
     }
 
+    int spinlockStatus = SpinlockAcquire(&Heap->Lock);
+    if (spinlockStatus < 0)
+    {
+        return;
+    }
+
     //
     // Free allocated memory pages (if backing memory allocation is used)
     //
     PageFree(Heap->Base, Heap->Size / PAGE_SIZE, 1);
+
+    SpinlockRelease(&Heap->Lock, spinlockStatus);
 }

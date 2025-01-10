@@ -25,6 +25,12 @@
     <Filter Include="Header Files\Test">
       <UniqueIdentifier>{01364216-1dbe-43d6-a535-0d2eac862565}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Synchronization">
+      <UniqueIdentifier>{94c518e3-2dcf-4d18-b538-762261e70e9f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Synchronization">
+      <UniqueIdentifier>{6ced310d-90fa-4451-b876-6664c1b284ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -74,6 +80,12 @@
     </ClCompile>
     <ClCompile Include="APIC.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Spinlock.c">
+      <Filter>Source Files\Synchronization</Filter>
+    </ClCompile>
+    <ClCompile Include="TestSynchronization.c">
+      <Filter>Source Files\Test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -127,6 +139,12 @@
     </ClInclude>
     <ClInclude Include="APIC.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Spinlock.h">
+      <Filter>Header Files\Synchronization</Filter>
+    </ClInclude>
+    <ClInclude Include="TestSynchronization.h">
+      <Filter>Header Files\Test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -2,6 +2,7 @@
 #define _HEAP_H_
 
 #include "main.h"
+#include "Spinlock.h"
 
 typedef struct _LIST_ENTRY
 {
@@ -14,6 +15,7 @@ typedef struct _HEAP
     PVOID      Base;
     DWORD      Size;
     LIST_ENTRY FreeList;
+    SPINLOCK   Lock;
 } HEAP, * PHEAP;
 
 _Must_inspect_result_

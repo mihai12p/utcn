@@ -2,7 +2,7 @@
 #include "PIC.h"
 #include "String.h"
 
-static PSCREEN gVideo = (PSCREEN)(0x000B8000 | TERABYTE);
+static PSCREEN gVideo = (PSCREEN)(0x000B8000);
 static SCREEN_BUFFER gCLIScreenBuffer = { 0 };
 static SCREEN_BUFFER gEditScreenBuffer = { 0 };
 

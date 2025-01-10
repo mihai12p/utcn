@@ -107,7 +107,6 @@ TestcaseHeap(
     HEAP heap = { 0 };
     PVOID heapBase = NULL;
     DWORD heapSize = 0x1000;  // 4KB heap for testing
-
     int status = HeapCreate(&heap, heapBase, heapSize);
     if (!status)
     {
