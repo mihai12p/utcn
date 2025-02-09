@@ -67,6 +67,8 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
       <AdditionalOptions>/noover %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -149,6 +151,7 @@
     <ClCompile Include="Keyboard.c" />
     <ClCompile Include="logging.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="Mutex.c" />
     <ClCompile Include="Spinlock.c" />
     <ClCompile Include="TestMemory.c" />
     <ClCompile Include="Physical.c" />
@@ -157,6 +160,8 @@
     <ClCompile Include="screen.c" />
     <ClCompile Include="String.c" />
     <ClCompile Include="TestSynchronization.c" />
+    <ClCompile Include="Thread.c" />
+    <ClCompile Include="Utils.c" />
     <ClCompile Include="Virtual.c" />
   </ItemGroup>
   <ItemGroup>
@@ -169,6 +174,7 @@
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="Mutex.h" />
     <ClInclude Include="Spinlock.h" />
     <ClInclude Include="TestMemory.h" />
     <ClInclude Include="Physical.h" />
@@ -178,6 +184,8 @@
     <ClInclude Include="screen.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="TestSynchronization.h" />
+    <ClInclude Include="Thread.h" />
+    <ClInclude Include="Utils.h" />
     <ClInclude Include="Virtual.h" />
   </ItemGroup>
   <ItemGroup>

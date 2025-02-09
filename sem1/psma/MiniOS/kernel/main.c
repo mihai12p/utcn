@@ -12,9 +12,9 @@ KernelMain()
 
     InitScreen();
 
-    BspInitInterrupts();
-
     ATA_DetectDevice();
+
+    BspInitInterrupts();
 
     InitMP();
 
@@ -36,6 +36,8 @@ APMain()
     LogMessage("Hello from CPU "); LogDword(lapicId); LogMessage("\n");
 
     ApInitInterrupts();
+
+    ApInitTimer();
 
     while (1);
 

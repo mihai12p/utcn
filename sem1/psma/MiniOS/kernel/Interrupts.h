@@ -51,45 +51,46 @@ typedef struct _CPU_CONTEXT
 
 typedef enum _EXCEPTION_ID
 {
-    EXCEPTION_DE       = 0,
-    EXCEPTION_DB       = 1,
-    EXCEPTION_NMI      = 2,
-    EXCEPTION_BP       = 3,
-    EXCEPTION_OF       = 4,
-    EXCEPTION_BR       = 5,
-    EXCEPTION_UD       = 6,
-    EXCEPTION_NM       = 7,
-    EXCEPTION_DF       = 8,
-    EXCEPTION_RES1     = 9,
-    EXCEPTION_TS       = 10,
-    EXCEPTION_NP       = 11,
-    EXCEPTION_SS       = 12,
-    EXCEPTION_GP       = 13,
-    EXCEPTION_PF       = 14,
-    EXCEPTION_RES2     = 15,
-    EXCEPTION_MF       = 16,
-    EXCEPTION_AC       = 17,
-    EXCEPTION_MC       = 18,
-    EXCEPTION_XMXF     = 19,
-    EXCEPTION_VE       = 20,
-    EXCEPTION_CP       = 21,
-    EXCEPTION_RES3     = 22,
-    EXCEPTION_RES4     = 23,
-    EXCEPTION_RES5     = 24,
-    EXCEPTION_RES6     = 25,
-    EXCEPTION_RES7     = 26,
-    EXCEPTION_RES8     = 27,
-    EXCEPTION_HV       = 28,
-    EXCEPTION_VC       = 29,
-    EXCEPTION_SX       = 30,
-    EXCEPTION_RES9     = 31,
-    INTERRUPT_TIMER    = 32,
-    INTERRUPT_KB       = 33,
-    USER_DEFINED_START = 34,
-    INTERRUPT_SP_IRQ7  = 39,
-    INTERRUPT_SP_IRQ15 = 47,
-    INTERRUPT_IPI_T1   = 80,
-    INTERRUPT_IPI_T2   = 81,
+    EXCEPTION_DE         = 0,
+    EXCEPTION_DB         = 1,
+    EXCEPTION_NMI        = 2,
+    EXCEPTION_BP         = 3,
+    EXCEPTION_OF         = 4,
+    EXCEPTION_BR         = 5,
+    EXCEPTION_UD         = 6,
+    EXCEPTION_NM         = 7,
+    EXCEPTION_DF         = 8,
+    EXCEPTION_RES1       = 9,
+    EXCEPTION_TS         = 10,
+    EXCEPTION_NP         = 11,
+    EXCEPTION_SS         = 12,
+    EXCEPTION_GP         = 13,
+    EXCEPTION_PF         = 14,
+    EXCEPTION_RES2       = 15,
+    EXCEPTION_MF         = 16,
+    EXCEPTION_AC         = 17,
+    EXCEPTION_MC         = 18,
+    EXCEPTION_XMXF       = 19,
+    EXCEPTION_VE         = 20,
+    EXCEPTION_CP         = 21,
+    EXCEPTION_RES3       = 22,
+    EXCEPTION_RES4       = 23,
+    EXCEPTION_RES5       = 24,
+    EXCEPTION_RES6       = 25,
+    EXCEPTION_RES7       = 26,
+    EXCEPTION_RES8       = 27,
+    EXCEPTION_HV         = 28,
+    EXCEPTION_VC         = 29,
+    EXCEPTION_SX         = 30,
+    EXCEPTION_RES9       = 31,
+    INTERRUPT_TIMER      = 32,
+    INTERRUPT_KB         = 33,
+    USER_DEFINED_START   = 34,
+    INTERRUPT_SP_IRQ7    = 39,
+    INTERRUPT_SP_IRQ15   = 47,
+    INTERRUPT_IPI_T1     = 80,
+    INTERRUPT_IPI_T2     = 81,
+    INTERRUPT_LAPIC_TICK = 82,
     USER_DEFINED_END   = 255
 } EXCEPTION_ID;
 
@@ -102,10 +103,10 @@ typedef struct _EXCEPTION_INFO
 
 VOID
 InterruptHandler(
-    _In_ PCPU_CONTEXT Context,
-    _In_ QWORD        InterruptIdx,
-    _In_ QWORD        ErrorCode,
-    _In_ QWORD        Reserved
+    _Inout_ PCPU_CONTEXT Context,
+    _In_    QWORD        InterruptIdx,
+    _In_    QWORD        ErrorCode,
+    _In_    QWORD        Reserved
 );
 
 VOID
@@ -113,5 +114,8 @@ BspInitInterrupts();
 
 VOID
 ApInitInterrupts();
+
+VOID
+ApInitTimer();
 
 #endif//_INTERRUPTS_H_

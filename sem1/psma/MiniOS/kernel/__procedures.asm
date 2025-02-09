@@ -1,7 +1,7 @@
 
 %include "Utils.inc"
 
-EXPORT2C EnableLAPIC, SendStartupIPI, SendIPI, WriteLAPICRegister, GetRFlags, SetRFlags
+EXPORT2C EnableLAPIC, SendStartupIPI, SendIPI, WriteLAPICRegister
 
 segment .text
 
@@ -110,14 +110,4 @@ SendIPI:
     mov     [eax],  edx
 
     call    __wait_for_delivery
-    ret
-
-GetRFlags:
-    pushfq
-    pop     rax
-    ret
-
-SetRFlags:
-    push    rcx
-    popfq
     ret

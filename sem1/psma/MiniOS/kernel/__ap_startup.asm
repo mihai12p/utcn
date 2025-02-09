@@ -117,7 +117,7 @@ APStart:
 
 __invalidate_TLB:
     ;
-    ; invalidate all entries in the TLB (Translation Lookaside Buffers)
+    ; invalidate all entries in the TLB (Translation Lookaside Buffer)
     ; where the processor may cache information about the translation of linear addresses
     ;
     mov  rax,    cr3

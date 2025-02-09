@@ -14,6 +14,11 @@ TestcaseLinkedList(
 );
 
 VOID
+TestcaseThread(
+    _In_opt_ const char* Arguments
+);
+
+VOID
 APTestcaseSynchronizedPrint();
 
 VOID

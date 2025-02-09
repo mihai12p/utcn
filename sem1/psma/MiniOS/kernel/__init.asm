@@ -113,8 +113,9 @@ ASMEntryPoint:
 %endrep
     ISR_NOERRCODE 80    ; IPI_T1
     ISR_NOERRCODE 81    ; IPI_T2
-%assign i 82
-%rep    174
+    ISR_NOERRCODE 82    ; LAPIC_TICK
+%assign i 83
+%rep    173
     ISR_NOERRCODE i
     %assign i i+1
 %endrep
@@ -186,6 +187,40 @@ __isr_common_stub:
     xor  r9,  r9
 
     call InterruptHandler
+
+    mov  rax, [rsp + CPUContext.rsp]
+    mov  [rsp + CPUContext_size + 28h], rax
+    mov  rax, [rsp + CPUContext.rip]
+    mov  [rsp + CPUContext_size + 10h], rax
+    xor  rax, rax
+    mov  ax,  [rsp + CPUContext.cs]
+    mov  [rsp + CPUContext_size + 18h], rax
+    xor  rax, rax
+    mov  ax,  [rsp + CPUContext.ss]
+    mov  [rsp + CPUContext_size + 30h], rax
+    xor  rax, rax
+    mov  eax, [rsp + CPUContext.rflags]
+    mov  [rsp + CPUContext_size + 20h], rax
+    mov  rax, [rsp + CPUContext.rax]
+    mov  rbx, [rsp + CPUContext.rbx]
+    mov  rcx, [rsp + CPUContext.rcx]
+    mov  rdx, [rsp + CPUContext.rdx]
+    mov  rsi, [rsp + CPUContext.rsi]
+    mov  rdi, [rsp + CPUContext.rdi]
+    mov  r8,  [rsp + CPUContext.r8]
+    mov  r9,  [rsp + CPUContext.r9]
+    mov  r10, [rsp + CPUContext.r10]
+    mov  r11, [rsp + CPUContext.r11]
+    mov  r12, [rsp + CPUContext.r12]
+    mov  r13, [rsp + CPUContext.r13]
+    mov  r14, [rsp + CPUContext.r14]
+    mov  r15, [rsp + CPUContext.r15]
+    mov  rbp, [rsp + CPUContext.rbp]
+    mov  ds,  [rsp + CPUContext.ds]
+    mov  es,  [rsp + CPUContext.es]
+    mov  fs,  [rsp + CPUContext.fs]
+    mov  gs,  [rsp + CPUContext.gs]
+
     add  rsp, CPUContext_size + 10h
 
     iretq
@@ -196,7 +231,7 @@ __magic:
 
 __invalidate_TLB:
     ;
-    ; invalidate all entries in the TLB (Translation Lookaside Buffers)
+    ; invalidate all entries in the TLB (Translation Lookaside Buffer)
     ; where the processor may cache information about the translation of linear addresses
     ;
     mov  rax,    cr3

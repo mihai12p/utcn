@@ -5,6 +5,7 @@
 #include "CLI.h"
 #include "screen.h"
 #include "TestSynchronization.h"
+#include "Thread.h"
 
 #define IDT_MAX_DESCRIPTORS    (256)
 
@@ -21,88 +22,89 @@ static int gNextIsExtended = 0;
 //
 static EXCEPTION_INFO gExceptionInfo[IDT_MAX_DESCRIPTORS] = {
 //    ExceptionName                                 ExceptionId
-    { "Division Error (#DE)",                       EXCEPTION_DE        }, // 0
-    { "Debug (#DB)",                                EXCEPTION_DB        }, // 1
-    { "Non-maskable Interrupt",                     EXCEPTION_NMI       }, // 2
-    { "Breakpoint (#BP)",                           EXCEPTION_BP        }, // 3
-    { "Overflow (#OF)",                             EXCEPTION_OF        }, // 4
-    { "Bound Range Exceeded (#BR)",                 EXCEPTION_BR        }, // 5
-    { "Invalid Opcode (#UD)",                       EXCEPTION_UD        }, // 6
-    { "Device Not Available (#NM)",                 EXCEPTION_NM        }, // 7
-    { "Double Fault (#DF)",                         EXCEPTION_DF        }, // 8
-    { "Coprocessor Segment Overrun",                EXCEPTION_RES1      }, // 9 (reserved)
-    { "Invalid TSS (#TS)",                          EXCEPTION_TS        }, // 10
-    { "Segment Not Present (#NP)",                  EXCEPTION_NP        }, // 11
-    { "Stack-Segment Fault (#SS)",                  EXCEPTION_SS        }, // 12
-    { "General Protection Fault (#GP)",             EXCEPTION_GP        }, // 13
-    { "Page Fault (#PF)",                           EXCEPTION_PF        }, // 14
-    { "Reserved",                                   EXCEPTION_RES2      }, // 15
-    { "x87 Floating-Point Exception (#MF)",         EXCEPTION_MF        }, // 16
-    { "Alignment Check (#AC)",                      EXCEPTION_AC        }, // 17
-    { "Machine Check (#MC)",                        EXCEPTION_MC        }, // 18
-    { "SIMD Floating-Point Exception (#XM#XF)",     EXCEPTION_XMXF      }, // 19
-    { "Virtualization Exception (#VE)",             EXCEPTION_VE        }, // 20
-    { "Control Protection Exception (#CP)",         EXCEPTION_CP        }, // 21
-    { "Reserved",                                   EXCEPTION_RES3      }, // 22
-    { "Reserved",                                   EXCEPTION_RES4      }, // 23
-    { "Reserved",                                   EXCEPTION_RES5      }, // 24
-    { "Reserved",                                   EXCEPTION_RES6      }, // 25
-    { "Reserved",                                   EXCEPTION_RES7      }, // 26
-    { "Reserved",                                   EXCEPTION_RES8      }, // 27
-    { "Hypervisor Injection Exception (#HV)",       EXCEPTION_HV        }, // 28 (Intel-specific)
-    { "VMM Communication Exception (#VC)",          EXCEPTION_VC        }, // 29 (Intel-specific)
-    { "Security Exception (#SX)",                   EXCEPTION_SX        }, // 30
-    { "Reserved",                                   EXCEPTION_RES9      }, // 31
-    { "Reserved",                                   INTERRUPT_TIMER     }, // 32
-    { "Reserved",                                   INTERRUPT_KB        }, // 33
-    { "Reserved",                                   USER_DEFINED_START  }, // 34
-    { "Reserved",                                   USER_DEFINED_START  }, // 35
-    { "Reserved",                                   USER_DEFINED_START  }, // 36
-    { "Reserved",                                   USER_DEFINED_START  }, // 37
-    { "Reserved",                                   USER_DEFINED_START  }, // 38
-    { "Reserved",                                   INTERRUPT_SP_IRQ7   }, // 39
-    { "Reserved",                                   USER_DEFINED_START  }, // 40
-    { "Reserved",                                   USER_DEFINED_START  }, // 41
-    { "Reserved",                                   USER_DEFINED_START  }, // 42
-    { "Reserved",                                   USER_DEFINED_START  }, // 43
-    { "Reserved",                                   USER_DEFINED_START  }, // 44
-    { "Reserved",                                   USER_DEFINED_START  }, // 45
-    { "Reserved",                                   USER_DEFINED_START  }, // 46
-    { "Reserved",                                   INTERRUPT_SP_IRQ15  }, // 47
-    { "Reserved",                                   USER_DEFINED_START  }, // 48
-    { "Reserved",                                   USER_DEFINED_START  }, // 49
-    { "Reserved",                                   USER_DEFINED_START  }, // 50
-    { "Reserved",                                   USER_DEFINED_START  }, // 51
-    { "Reserved",                                   USER_DEFINED_START  }, // 52
-    { "Reserved",                                   USER_DEFINED_START  }, // 53
-    { "Reserved",                                   USER_DEFINED_START  }, // 54
-    { "Reserved",                                   USER_DEFINED_START  }, // 55
-    { "Reserved",                                   USER_DEFINED_START  }, // 56
-    { "Reserved",                                   USER_DEFINED_START  }, // 57
-    { "Reserved",                                   USER_DEFINED_START  }, // 58
-    { "Reserved",                                   USER_DEFINED_START  }, // 59
-    { "Reserved",                                   USER_DEFINED_START  }, // 60
-    { "Reserved",                                   USER_DEFINED_START  }, // 61
-    { "Reserved",                                   USER_DEFINED_START  }, // 62
-    { "Reserved",                                   USER_DEFINED_START  }, // 63
-    { "Reserved",                                   USER_DEFINED_START  }, // 64
-    { "Reserved",                                   USER_DEFINED_START  }, // 65
-    { "Reserved",                                   USER_DEFINED_START  }, // 66
-    { "Reserved",                                   USER_DEFINED_START  }, // 67
-    { "Reserved",                                   USER_DEFINED_START  }, // 68
-    { "Reserved",                                   USER_DEFINED_START  }, // 69
-    { "Reserved",                                   USER_DEFINED_START  }, // 70
-    { "Reserved",                                   USER_DEFINED_START  }, // 71
-    { "Reserved",                                   USER_DEFINED_START  }, // 72
-    { "Reserved",                                   USER_DEFINED_START  }, // 73
-    { "Reserved",                                   USER_DEFINED_START  }, // 74
-    { "Reserved",                                   USER_DEFINED_START  }, // 75
-    { "Reserved",                                   USER_DEFINED_START  }, // 76
-    { "Reserved",                                   USER_DEFINED_START  }, // 77
-    { "Reserved",                                   USER_DEFINED_START  }, // 78
-    { "Reserved",                                   USER_DEFINED_START  }, // 79
-    { "Synchronized Print Testcase IPI",            INTERRUPT_IPI_T1    }, // 80
-    { "Synchronized Linked List Testcase IPI",      INTERRUPT_IPI_T2    }, // 81
+    { "Division Error (#DE)",                       EXCEPTION_DE         }, // 0
+    { "Debug (#DB)",                                EXCEPTION_DB         }, // 1
+    { "Non-maskable Interrupt",                     EXCEPTION_NMI        }, // 2
+    { "Breakpoint (#BP)",                           EXCEPTION_BP         }, // 3
+    { "Overflow (#OF)",                             EXCEPTION_OF         }, // 4
+    { "Bound Range Exceeded (#BR)",                 EXCEPTION_BR         }, // 5
+    { "Invalid Opcode (#UD)",                       EXCEPTION_UD         }, // 6
+    { "Device Not Available (#NM)",                 EXCEPTION_NM         }, // 7
+    { "Double Fault (#DF)",                         EXCEPTION_DF         }, // 8
+    { "Coprocessor Segment Overrun",                EXCEPTION_RES1       }, // 9 (reserved)
+    { "Invalid TSS (#TS)",                          EXCEPTION_TS         }, // 10
+    { "Segment Not Present (#NP)",                  EXCEPTION_NP         }, // 11
+    { "Stack-Segment Fault (#SS)",                  EXCEPTION_SS         }, // 12
+    { "General Protection Fault (#GP)",             EXCEPTION_GP         }, // 13
+    { "Page Fault (#PF)",                           EXCEPTION_PF         }, // 14
+    { "Reserved",                                   EXCEPTION_RES2       }, // 15
+    { "x87 Floating-Point Exception (#MF)",         EXCEPTION_MF         }, // 16
+    { "Alignment Check (#AC)",                      EXCEPTION_AC         }, // 17
+    { "Machine Check (#MC)",                        EXCEPTION_MC         }, // 18
+    { "SIMD Floating-Point Exception (#XM#XF)",     EXCEPTION_XMXF       }, // 19
+    { "Virtualization Exception (#VE)",             EXCEPTION_VE         }, // 20
+    { "Control Protection Exception (#CP)",         EXCEPTION_CP         }, // 21
+    { "Reserved",                                   EXCEPTION_RES3       }, // 22
+    { "Reserved",                                   EXCEPTION_RES4       }, // 23
+    { "Reserved",                                   EXCEPTION_RES5       }, // 24
+    { "Reserved",                                   EXCEPTION_RES6       }, // 25
+    { "Reserved",                                   EXCEPTION_RES7       }, // 26
+    { "Reserved",                                   EXCEPTION_RES8       }, // 27
+    { "Hypervisor Injection Exception (#HV)",       EXCEPTION_HV         }, // 28 (Intel-specific)
+    { "VMM Communication Exception (#VC)",          EXCEPTION_VC         }, // 29 (Intel-specific)
+    { "Security Exception (#SX)",                   EXCEPTION_SX         }, // 30
+    { "Reserved",                                   EXCEPTION_RES9       }, // 31
+    { "Reserved",                                   INTERRUPT_TIMER      }, // 32
+    { "Reserved",                                   INTERRUPT_KB         }, // 33
+    { "Reserved",                                   USER_DEFINED_START   }, // 34
+    { "Reserved",                                   USER_DEFINED_START   }, // 35
+    { "Reserved",                                   USER_DEFINED_START   }, // 36
+    { "Reserved",                                   USER_DEFINED_START   }, // 37
+    { "Reserved",                                   USER_DEFINED_START   }, // 38
+    { "Reserved",                                   INTERRUPT_SP_IRQ7    }, // 39
+    { "Reserved",                                   USER_DEFINED_START   }, // 40
+    { "Reserved",                                   USER_DEFINED_START   }, // 41
+    { "Reserved",                                   USER_DEFINED_START   }, // 42
+    { "Reserved",                                   USER_DEFINED_START   }, // 43
+    { "Reserved",                                   USER_DEFINED_START   }, // 44
+    { "Reserved",                                   USER_DEFINED_START   }, // 45
+    { "Reserved",                                   USER_DEFINED_START   }, // 46
+    { "Reserved",                                   INTERRUPT_SP_IRQ15   }, // 47
+    { "Reserved",                                   USER_DEFINED_START   }, // 48
+    { "Reserved",                                   USER_DEFINED_START   }, // 49
+    { "Reserved",                                   USER_DEFINED_START   }, // 50
+    { "Reserved",                                   USER_DEFINED_START   }, // 51
+    { "Reserved",                                   USER_DEFINED_START   }, // 52
+    { "Reserved",                                   USER_DEFINED_START   }, // 53
+    { "Reserved",                                   USER_DEFINED_START   }, // 54
+    { "Reserved",                                   USER_DEFINED_START   }, // 55
+    { "Reserved",                                   USER_DEFINED_START   }, // 56
+    { "Reserved",                                   USER_DEFINED_START   }, // 57
+    { "Reserved",                                   USER_DEFINED_START   }, // 58
+    { "Reserved",                                   USER_DEFINED_START   }, // 59
+    { "Reserved",                                   USER_DEFINED_START   }, // 60
+    { "Reserved",                                   USER_DEFINED_START   }, // 61
+    { "Reserved",                                   USER_DEFINED_START   }, // 62
+    { "Reserved",                                   USER_DEFINED_START   }, // 63
+    { "Reserved",                                   USER_DEFINED_START   }, // 64
+    { "Reserved",                                   USER_DEFINED_START   }, // 65
+    { "Reserved",                                   USER_DEFINED_START   }, // 66
+    { "Reserved",                                   USER_DEFINED_START   }, // 67
+    { "Reserved",                                   USER_DEFINED_START   }, // 68
+    { "Reserved",                                   USER_DEFINED_START   }, // 69
+    { "Reserved",                                   USER_DEFINED_START   }, // 70
+    { "Reserved",                                   USER_DEFINED_START   }, // 71
+    { "Reserved",                                   USER_DEFINED_START   }, // 72
+    { "Reserved",                                   USER_DEFINED_START   }, // 73
+    { "Reserved",                                   USER_DEFINED_START   }, // 74
+    { "Reserved",                                   USER_DEFINED_START   }, // 75
+    { "Reserved",                                   USER_DEFINED_START   }, // 76
+    { "Reserved",                                   USER_DEFINED_START   }, // 77
+    { "Reserved",                                   USER_DEFINED_START   }, // 78
+    { "Reserved",                                   USER_DEFINED_START   }, // 79
+    { "Synchronized Print Testcase IPI",            INTERRUPT_IPI_T1     }, // 80
+    { "Synchronized Linked List Testcase IPI",      INTERRUPT_IPI_T2     }, // 81
+    { "Local APIC Tick",                            INTERRUPT_LAPIC_TICK }, // 82
 };
 
 static
@@ -248,10 +250,10 @@ PrintStackFrame(
 static
 VOID
 HandleInterrupt(
-    _Out_ int*         InterruptHandled,
-    _In_  PCPU_CONTEXT Context,
-    _In_  QWORD        InterruptIdx,
-    _In_  QWORD        ErrorCode
+    _Out_   int*         InterruptHandled,
+    _Inout_ PCPU_CONTEXT Context,
+    _In_    QWORD        InterruptIdx,
+    _In_    QWORD        ErrorCode
 )
 {
     *InterruptHandled = 0;
@@ -274,6 +276,9 @@ HandleInterrupt(
     case INTERRUPT_TIMER:
     {
         PIC_sendEOI(0);
+
+        SchedulerTick(Context);
+
         break;
     }
     case INTERRUPT_KB:
@@ -335,6 +340,14 @@ __kb_finally:
         WriteLAPICRegister(LAPIC_EOI_REGISTER, 0);
         break;
     }
+    case INTERRUPT_LAPIC_TICK:
+    {
+        WriteLAPICRegister(LAPIC_EOI_REGISTER, 0);
+
+        SchedulerTick(Context);
+
+        break;
+    }
     default:
     {
         return;
@@ -346,14 +359,16 @@ __kb_finally:
 
 VOID
 InterruptHandler(
-    _In_ PCPU_CONTEXT Context,
-    _In_ QWORD        InterruptIdx,
-    _In_ QWORD        ErrorCode,
-    _In_ QWORD        Reserved
+    _Inout_ PCPU_CONTEXT Context,
+    _In_    QWORD        InterruptIdx,
+    _In_    QWORD        ErrorCode,
+    _In_    QWORD        Reserved
 )
 {
     int interruptHandled = 0;
+    _disable();
     HandleInterrupt(&interruptHandled, Context, InterruptIdx, ErrorCode);
+    _enable();
     if (interruptHandled)
     {
         return;
@@ -396,9 +411,9 @@ BspInitInterrupts()
     PIC_remap(PIC1_OFFSET, PIC2_OFFSET);
 
     //
-    // initialize PIT to 100 Hz
+    // initialize PIT to 60 Hz
     //
-    PIT_init(100);
+    PIT_init(60);
     KeyboardInit();
     CLI_Init();
 
@@ -419,4 +434,13 @@ ApInitInterrupts()
     __lidt(&gIDTR);
 
     _enable();
+}
+
+VOID
+ApInitTimer()
+{
+    WriteLAPICRegister(LAPIC_DCR_REGISTER, 16);
+    DWORD timerCount = 100000;
+    WriteLAPICRegister(LAPIC_ICR_REGISTER, timerCount);
+    WriteLAPICRegister(LAPIC_LVTT_REGISTER, INTERRUPT_LAPIC_TICK | LAPIC_PERIODIC_TIMER);
 }

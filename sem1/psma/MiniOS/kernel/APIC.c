@@ -2,6 +2,7 @@
 #include "String.h"
 #include "Virtual.h"
 #include "logging.h"
+#include "Thread.h"
 
 //
 // https://pdos.csail.mit.edu/6.828/2018/readings/ia32/MPspec.pdf
@@ -270,6 +271,11 @@ InitMP()
         LogMessage("Starting processor with LAPIC ID "); LogDword(lapicId); LogMessage("\n");
         SendStartupIPI(lapicId);
     }
+
+    //
+    // Initialize kernel threads, 1 for each CPU.
+    //
+    ThreadMgmtInit(gLAPICInfo.LapicIdsCount);
 }
 
 VOID

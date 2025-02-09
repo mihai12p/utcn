@@ -26,6 +26,8 @@ typedef VOID*                   PVOID;
 #define OFFSET_MID(x)           (((x) >> 16) & 0xFFFF)
 #define OFFSET_HIGH(x)          (((x) >> 32) & 0xFFFFFFFF)
 #define FIELD_OFFSET(T, E)      ((size_t)&(((T *)0)->E))
+#define CONTAINING_RECORD(Addr, T, E) \
+                                ((T *)((PBYTE)(Addr) - (size_t)(&((T *)0)->E)))
 
 #define KILOBYTE                (1024)
 #define MEGABYTE                (1024 * ((QWORD)KILOBYTE))
@@ -43,7 +45,12 @@ typedef VOID*                   PVOID;
 #define BIT_USER_SUPERVISOR     (BIT(2))
 
 #define LAPIC_EOI_REGISTER      (0xB0)
+#define LAPIC_DCR_REGISTER      (0x3E0)
+#define LAPIC_ICR_REGISTER      (0x380)
+#define LAPIC_LVTT_REGISTER     (0x320)
+
 #define RFLAGS_IF_BIT           (0x200)     // Interrupt Flag bit in RFLAGS
+#define LAPIC_PERIODIC_TIMER    (0x20000)
 
 //
 // MAGIC breakpoint into BOCHS (XCHG BX,BX)

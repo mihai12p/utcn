@@ -18,7 +18,7 @@ SpinlockAcquire(
         return SPINLOCK_ERROR_INVALID;
     }
 
-    QWORD flags = GetRFlags();
+    QWORD flags = __readeflags();
     
     //
     // Check if interrupts were enabled
@@ -29,7 +29,7 @@ SpinlockAcquire(
         //
         // Disable interrupts
         //
-        SetRFlags(flags & ~RFLAGS_IF_BIT);
+        __writeeflags(flags & ~RFLAGS_IF_BIT);
     }
 
     while (1)
@@ -63,7 +63,6 @@ SpinlockRelease(
         //
         // Re-enable interrupts if they were enabled before
         //
-        QWORD flags = GetRFlags();
-        SetRFlags(flags | RFLAGS_IF_BIT);
+        __writeeflags(__readeflags() | RFLAGS_IF_BIT);
     }
 }

@@ -4,6 +4,8 @@
 #include "APIC.h"
 #include "Heap.h"
 #include "Interrupts.h"
+#include "Thread.h"
+#include "Mutex.h"
 
 extern LAPIC_INFO gLAPICInfo;
 
@@ -200,4 +202,64 @@ APTestcaseLinkedList()
     }
 
     MarkCPUReady(lapicId);
+}
+
+static volatile LONG gWorkDoneCount = 0;
+static volatile LONG gSharedCounter = 0;
+static MUTEX gMutex;
+
+VOID
+__cdecl
+APTestcaseThread(
+    _In_opt_ PVOID Context
+)
+{
+    PTHREAD currentThread = GetCurrentThread();
+    DWORD threadId = currentThread->ThreadId;
+
+    LogMessage("Thread "); LogDword(threadId); LogMessage(" started\n");
+
+    for (int i = 0; i < 1000; ++i)
+    {
+        MutexAcquire(&gMutex, currentThread);
+        ++gSharedCounter;
+        MutexRelease(&gMutex, currentThread);
+    }
+
+    LogMessage("Thread "); LogDword(threadId); LogMessage(" completed\n");
+
+    _InterlockedIncrement(&gWorkDoneCount);
+
+    while (1)
+    {
+        _enable();
+        __halt();
+    }
+}
+
+VOID
+TestcaseThread(
+    _In_opt_ const char* Arguments
+)
+{
+    LogMessage("\n== Testing Synchronized Threads ==\n");
+
+    int threadCount = 4;
+
+    MutexInit(&gMutex);
+    gSharedCounter = 0;
+    gWorkDoneCount = 0;
+
+    for (int i = 0; i < threadCount; ++i)
+    {
+        PTHREAD thread = ThreadCreate(APTestcaseThread, NULL);
+    }
+
+    while (gWorkDoneCount != threadCount)
+    {
+        _mm_pause();
+    }
+    LogMessage("Final counter value: "); LogDword(gSharedCounter); LogMessage("\n");
+
+    LogMessage("== Synchronized Threads Test Completed ==\n");
 }

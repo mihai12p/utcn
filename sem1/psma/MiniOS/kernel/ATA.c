@@ -47,9 +47,19 @@ ATA_DetectDevice()
             //
             // Wait for BSY to clear.
             //
-            while (status & STATUS_BSY)
+            int timeout = 10000;
+            while ((status & STATUS_BSY))
             {
                 status = __inbyte(ioBase + ATA_STATUS);
+                if (--timeout <= 0)
+                {
+                    break;
+                }
+            }
+
+            if (timeout <= 0)
+            {
+                continue;
             }
 
             //
@@ -65,7 +75,7 @@ ATA_DetectDevice()
                 continue;
             }
 
-            int timeout = 10000;
+            timeout = 10000;
             while (!((status & STATUS_ERR) || (status & STATUS_DRQ)))
             {
                 status = __inbyte(ioBase + ATA_STATUS);

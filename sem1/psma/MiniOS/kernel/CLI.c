@@ -338,6 +338,7 @@ CLI_Init()
     CLI_RegisterCommand(&gTestcases, "heap",                TestcaseHeap);
     CLI_RegisterCommand(&gTestcases, "synchronized_print",  TestcaseSynchronizedPrint);
     CLI_RegisterCommand(&gTestcases, "linked_list",         TestcaseLinkedList);
+    CLI_RegisterCommand(&gTestcases, "thread",              TestcaseThread);
 }
 
 VOID
